@@ -194,7 +194,6 @@ async function startBlackjack(interaction, bet) {
   });
   game.collector = collector;
 
-  collector.on('collect', (buttonInteraction) => handleButton(buttonInteraction, game));
 
   collector.on('end', async (_collected, reason) => {
     if (game.finished || game.settled || game.busy || reason === 'finished') return;
