@@ -1,0 +1,16 @@
+# Dépendances
+node_modules/
+
+# Configuration secrète (NE JAMAIS COMMITER)
+.env
+
+# Base de données locale (fichiers runtime)
+data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Système
+.DS_Store
+Thumbs.db
