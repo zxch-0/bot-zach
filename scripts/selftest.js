@@ -15,6 +15,7 @@ const rps = require('../src/games/rps');
 const shopService = require('../src/services/shop');
 const invitesService = require('../src/services/invites');
 const config = require('../src/config');
+const { cut } = require('../src/utils/format');
 
 let passed = 0;
 let failed = 0;
@@ -224,6 +225,19 @@ function check(name, condition) {
   check('arrivées simultanées : la 1re voit 11, la 2e voit 12 (sérialisées)',
     r1 && r1.inviterId === 'invA' && r2 && r2.inviterId === 'invA' && fetchCount === 3);
   invitesService.resetTrackingState();
+
+  console.log('\n━ ✂️  Troncature sûre (anti emoji coupé)');
+  const riskyTitle = 'Acheter ' + 'A'.repeat(36) + '🧰'; // l'emoji commence pile à l'indice 44
+  const cutTitle = cut(riskyTitle, 45);
+  const lastUnit = cutTitle.charCodeAt(cutTitle.length - 1);
+  check('cut() ne coupe jamais une paire de substitution', !(lastUnit >= 0xd800 && lastUnit <= 0xdbff));
+  check('cut() respecte la longueur demandée (points de code ET unités UTF-16)', Array.from(cutTitle).length <= 45 && cutTitle.length <= 45);
+  check('cut() garde les chaînes courtes intactes', cut('abc', 45) === 'abc');
+  check('cut() tronque bien les longues chaînes', cut('a'.repeat(50), 45) === 'a'.repeat(45));
+  check('cut() accepte null/undefined', cut(null, 10) === '' && cut(undefined, 10) === '');
+  const modalRisky = shopService.buildDeliveryModal({ id: 'x', name: 'A'.repeat(36) + '🧰' }); // titre = 46 unités UTF-16 avant troncature
+  const modalTitle = modalRisky.data.title;
+  check('titre de modale sans orphelin', !(modalTitle.charCodeAt(modalTitle.length - 1) >= 0xd800 && modalTitle.charCodeAt(modalTitle.length - 1) <= 0xdbff));
 
   console.log('\n━ ⚡ Concurrence (débits simultanés)');
   await store.credit('u9', 1000);

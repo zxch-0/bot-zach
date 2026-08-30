@@ -19,7 +19,7 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const { baseEmbed, COLORS } = require('../utils/embeds');
-const { fmtCoins, fmtDate } = require('../utils/format');
+const { fmtCoins, fmtDate, cut } = require('../utils/format');
 
 const NAME_MAX = 60;
 const DESCRIPTION_MAX = 120;
@@ -123,8 +123,8 @@ function buildShopEmbed(products) {
 
   for (const product of products.slice(0, config.maxProducts)) {
     embed.addFields({
-      name: `${product.emoji} ${product.name}`.slice(0, 256),
-      value: `**Prix :** ${fmtCoins(product.price)}\n${product.description || '—'}`.slice(0, 1024),
+      name: cut(`${product.emoji} ${product.name}`, 256),
+      value: cut(`**Prix :** ${fmtCoins(product.price)}\n${product.description || '—'}`, 1024),
       inline: false,
     });
   }
@@ -136,8 +136,8 @@ function buildShopRow(products) {
   if (!products || products.length === 0) return null;
   const options = products.slice(0, config.maxProducts).map((p) => {
     const builder = new StringSelectMenuOptionBuilder()
-      .setLabel(String(p.name).slice(0, 100))
-      .setDescription(`${p.price} coins — ${p.description || 'Produit ZachServices'}`.slice(0, 100))
+      .setLabel(cut(String(p.name), 100))
+      .setDescription(cut(`${p.price} coins — ${p.description || 'Produit ZachServices'}`, 100))
       .setValue(p.id);
     // emoji invalide => aucun emoji plutôt qu'une erreur API
     if (isSafeEmoji(p.emoji)) builder.setEmoji(p.emoji);
@@ -154,7 +154,7 @@ function buildShopRow(products) {
 function buildDeliveryModal(product) {
   const modal = new ModalBuilder()
     .setCustomId(`shop:modal:${product.id}`)
-    .setTitle(`Acheter ${product.name}`.slice(0, 45));
+    .setTitle(cut(`Acheter ${product.name}`, 45));
   const input = new TextInputBuilder()
     .setCustomId('delivery_username')
     .setLabel('Pseudo Discord pour la livraison')

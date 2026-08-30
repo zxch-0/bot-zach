@@ -38,4 +38,22 @@ function discordRelative(ts) {
   return `<t:${Math.floor(ts / 1000)}:R>`;
 }
 
-module.exports = { fmtCoins, fmtTimeLeft, fmtDate, discordRelative };
+/**
+ * Troncature SÛRE par points de code (et non par unités UTF-16) :
+ * String.slice() peut couper un emoji en plein milieu d'une paire de
+ * substitution et produire un caractère orphelin que l'API Discord rejette.
+ * Discord comptant ses limites en unités UTF-16, on retire ensuite des
+ * points de code entiers jusqu'à respecter la limite des deux façons.
+ */
+function cut(text, maxLength) {
+  const cps = Array.from(String(text ?? ''));
+  if (cps.length > maxLength) cps.length = maxLength;
+  let str = cps.join('');
+  while (str.length > maxLength) {
+    cps.pop(); // retire un point de code ENTIER (jamais une moitié d'emoji)
+    str = cps.join('');
+  }
+  return str;
+}
+
+module.exports = { fmtCoins, fmtTimeLeft, fmtDate, discordRelative, cut };

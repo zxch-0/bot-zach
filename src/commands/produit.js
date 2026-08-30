@@ -10,7 +10,7 @@ const { SlashCommandBuilder, InteractionContextType, PermissionFlagsBits } = req
 const shopService = require('../services/shop');
 const { isAdminInteraction } = require('../utils/permissions');
 const { baseEmbed, COLORS, errorEmbed } = require('../utils/embeds');
-const { fmtCoins } = require('../utils/format');
+const { fmtCoins, cut } = require('../utils/format');
 const config = require('../config');
 
 module.exports = {
@@ -116,10 +116,9 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const lines = products
+    const lines = cut(products
       .map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)} • id : \`${p.id}\``)
-      .join('\n')
-      .slice(0, 4000);
+      .join('\n'), 4000);
     const embed = baseEmbed(COLORS.info)
       .setTitle(`📦 Produits de la boutique (${products.length}/${config.maxProducts})`)
       .setDescription(lines)

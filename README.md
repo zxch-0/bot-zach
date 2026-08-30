@@ -372,7 +372,8 @@ Le dépôt inclut **5 suites de vérification** complémentaires — lancez-les 
 ```bash
 npm run selftest   # 1. Logique métier : économie, daily, invitations, blackjack, RPS, boutique,
                    #    attribution des invitations (liens à usage unique, arrivées simultanées),
-                   #    concurrence (30 débits simultanés), sabot, plafond 25 produits (78 tests)
+                   #    concurrence (30 débits simultanés), sabot, plafond 25 produits,
+                   #    troncature sûre des textes (emoji jamais coupés) (84 tests)
 npm run simulate   # 2. Intégration : les VRAIES commandes avec de fausses interactions Discord —
                    #    daily, achat complet (modale → débit → MP admin), blackjack boutons, anti-hijack,
                    #    anti double-règlement, remboursement si message inaccessible (45 tests)
@@ -433,7 +434,7 @@ bot-zach/
 │   │                         # guildCreate, interactionCreate (+ autocomplétion)
 │   └── utils/                # Embeds, formatage, droits d'administration
 ├── scripts/
-│   ├── selftest.js           # 78 tests de logique (npm run selftest)
+│   ├── selftest.js           # 84 tests de logique (npm run selftest)
 │   ├── simulate.js           # 45 tests d'intégration (npm run simulate)
 │   ├── test-postgres.js      # 41 tests SQL sur base émulée pg-mem (npm run test-pg)
 │   └── verify.js             # 103 vérifications statiques (npm run verify)
