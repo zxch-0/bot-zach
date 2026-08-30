@@ -36,6 +36,23 @@ async function tryDebit(store, userId, amount) {
 }
 
 /**
+ * Ajustement admin (/give) : ajoute des coins, ou en retire sans jamais
+ * passer sous 0 (le retrait est plafonné au solde actuel).
+ * Retourne { balance, clamped } — clamped = vrai si le retrait a été réduit.
+ */
+async function adminAdjust(store, userId, amount) {
+  if (amount >= 0) {
+    const balance = await store.credit(userId, amount);
+    return { balance, clamped: false };
+  }
+  const current = (await store.getUser(userId)).balance;
+  const take = Math.min(-amount, current);
+  if (take > 0) await store.debit(userId, take);
+  const fresh = await store.getUser(userId);
+  return { balance: fresh.balance, clamped: take < -amount };
+}
+
+/**
  * Tente de récupérer le /daily.
  * Conditions : au moins 1 invitation réussie + cooldown écoulé.
  * Retour :
@@ -75,4 +92,4 @@ async function claimDaily(store, userId) {
   return { status: 'ok', balance, reward: config.dailyReward };
 }
 
-module.exports = { getBalance, topBalances, credit, tryDebit, claimDaily };
+module.exports = { getBalance, topBalances, credit, tryDebit, adminAdjust, claimDaily };

@@ -13,6 +13,7 @@ const economy = require('../src/services/economy');
 const blackjack = require('../src/games/blackjack');
 const rps = require('../src/games/rps');
 const shopService = require('../src/services/shop');
+const config = require('../src/config');
 
 let passed = 0;
 let failed = 0;
@@ -103,18 +104,58 @@ function check(name, condition) {
   const picks = new Set(Array.from({ length: 200 }, () => rps.botPick()));
   check('le bot choisit parmi les 3 coups', [...picks].every((p) => rps.CHOICE_KEYS.includes(p)) && picks.size >= 1);
 
-  console.log('\n━ 🛒 Boutique');
+  console.log('\n━ 🛒 Boutique & produits');
   const buyer = { id: 'u2', username: 'acheteur-test' };
-  const product = shopService.getProduct('zach-checker');
+  const product = await shopService.getProduct(store, 'zach-checker');
   check('produit 1 : Zach-checker à 1000 coins', product && product.price === 1000);
-  const premium = shopService.getProduct('zach-checker-premium');
+  const premium = await shopService.getProduct(store, 'zach-checker-premium');
   check('produit 2 : Zach-checker Premium à 5000 coins', premium && premium.price === 5000);
+  check('produits par défaut créés automatiquement', (await store.listProducts()).length === 2);
   const before = (await store.getUser(buyer.id)).balance; // 1000
   const poor = await shopService.processPurchase({ store, buyer: { id: 'u1', username: 'pauvre' }, product: premium, deliveryUsername: 'pauvre' });
   check('achat refusé si solde insuffisant', poor.ok === false && poor.reason === 'insufficient');
-  const purchase = await shopService.processPurchase({ store, buyer, product, deliveryUsername: 'livraison-test', guildName: 'ServeurTest' });
+  const purchase = await shopService.processPurchase({ store, buyer, product, deliveryUsername: 'livraison-test' });
   check('achat accepté si solde suffisant', purchase.ok === true);
   check('coins débités du bon montant', (await store.getUser(buyer.id)).balance === before - product.price);
+
+  console.log('\n━ 🛠️  /produit (gestion dynamique)');
+  const added = await shopService.addProduct(store, { name: 'Checker Doré', price: 2500, description: 'Édition dorée', emoji: '🏆', actorId: 'admin1' });
+  check('ajout produit (slug sans accents)', added.ok === true && added.product.id === 'checker-dore');
+  const duplicate = await shopService.addProduct(store, { name: 'Checker Doré', price: 100, description: '', emoji: '' });
+  check('nom dupliqué → id suffixé', duplicate.ok === true && duplicate.product.id === 'checker-dore-2');
+  const badPrice = await shopService.addProduct(store, { name: 'Cassé', price: 0 });
+  check('prix invalide refusé', badPrice.ok === false);
+  const badName = await shopService.addProduct(store, { name: '', price: 100 });
+  check('nom vide refusé', badName.ok === false);
+  const badEmoji = await shopService.addProduct(store, { name: 'Emoji Test', price: 100, emoji: 'texte pas emoji' });
+  check('emoji non valide remplacé par 📦', badEmoji.ok === true && badEmoji.product.emoji === '📦');
+  const okEmoji = await shopService.addProduct(store, { name: 'Emoji Valide', price: 100, emoji: '🚀' });
+  check('emoji unicode accepté', okEmoji.ok === true && okEmoji.product.emoji === '🚀');
+  const customEmoji = await shopService.addProduct(store, { name: 'Emoji Custom', price: 100, emoji: '<a:spin:123456789012345678>' });
+  check('emoji custom <:nom:id> accepté', customEmoji.ok === true && customEmoji.product.emoji === '<a:spin:123456789012345678>');
+  const slug = shopService.slugify('Ça c\'est un Super Produit !');
+  check('slug sans accents ni caractères spéciaux', slug === 'ca-c-est-un-super-produit');
+  check('isSafeEmoji refuse un texte long', shopService.isSafeEmoji('bonjour') === false);
+  check('menu boutique : null si vide', shopService.buildShopRow([]) === null);
+  const row = shopService.buildShopRow(await store.listProducts());
+  check('menu boutique construit avec les produits', row !== null && row.components.length === 1);
+  const modal = shopService.buildDeliveryModal({ id: 'x'.repeat(40), name: 'N'.repeat(60) });
+  check('titre de modale tronqué à 45 caractères', modal.data.title.length <= 45);
+  const removed = await shopService.removeProduct(store, 'checker-dore');
+  check('retrait produit', removed.ok === true && removed.product.id === 'checker-dore');
+  const removedTwice = await shopService.removeProduct(store, 'checker-dore');
+  check('retrait d\'un produit absent refusé', removedTwice.ok === false);
+  check(' limite 25 produits respectée', config.maxProducts === 25);
+
+  console.log('\n━ 🪙 /give (ajustement admin)');
+  await store.credit('u5', 300);
+  const add = await economy.adminAdjust(store, 'u5', 200);
+  check('ajout simple 300+200=500', add.balance === 500 && add.clamped === false);
+  const removeTooMuch = await economy.adminAdjust(store, 'u5', -1000);
+  check('retrait plafonné au solde (jamais négatif)', removeTooMuch.balance === 0 && removeTooMuch.clamped === true);
+  await economy.adminAdjust(store, 'u5', 100);
+  const removeSome = await economy.adminAdjust(store, 'u5', -40);
+  check('retrait partiel 100-40=60', removeSome.balance === 60 && removeSome.clamped === false);
 
   await store.close();
   try { fs.unlinkSync(dbFile); } catch {}

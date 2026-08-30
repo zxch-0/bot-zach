@@ -24,7 +24,9 @@
    | 🧰 **Zach-checker** | 1 000 coins |
    | 💎 **Zach-checker Premium** | 5 000 coins |
 
-   À l'achat, le bot demande le **pseudo Discord de livraison**, débite les coins puis **envoie un message privé à l'administrateur** (vous) contenant : le pseudo de l'acheteur, le produit acheté, le prix et le pseudo de livraison — tout ce qu'il faut pour livrer la commande.
+   …et **autant d'autres produits que vous voulez** : les admins en ajoutent à la volée avec `/produit ajouter` (25 max, stockés en base).
+
+   À l'achat, le bot demande le **pseudo Discord de livraison**, débite les coins puis **envoie un message privé à chaque admin** (vous) contenant : le pseudo de l'acheteur, le produit acheté, le prix et le pseudo de livraison — tout ce qu'il faut pour livrer la commande.
 
 > 💡 **Zéro dépendance payante** : stockage local (fichier JSON) ou base PostgreSQL **gratuite** (Neon), et un guide d'hébergement 100 % gratuit est fourni plus bas.
 
@@ -42,8 +44,38 @@
 | `/rps mise choix` | Pierre-feuille-ciseaux contre le bot | Tous |
 | `/shop` | Boutique — achat de produits avec livraison | Tous |
 | `/aide` | Rappel des commandes et des règles | Tous |
-| `/give utilisateur montant` | Ajoute/retire des coins (montant négatif = retrait) | **Admin du bot** |
+| `/give utilisateur montant` | Ajoute/retire des coins (négatif = retrait, plafonné à 0) | **Admins** |
+| `/produit ajouter nom prix [description] [emoji]` | Ajoute un produit à la boutique | **Admins** |
+| `/produit retirer produit` | Retire un produit (avec autocomplétion) | **Admins** |
+| `/produit liste` | Liste les produits et leurs identifiants | **Admins** |
 | `/import-invites` | Importe les invitations existantes du serveur | **Gérer le serveur** |
+
+### 🛠️ Qui est « admin du bot » ? (configuration facile)
+
+Une personne est **admin du bot** si **au moins une** de ces conditions est vraie — vous n'avez rien à configurer pour que ça marche :
+
+1. Son ID Discord est listé dans `ADMIN_USER_IDS` du `.env` (c'est aussi lui/eux qui reçoivent les **MP d'achat**) ;
+2. Elle possède le rôle Discord indiqué dans `ADMIN_ROLE_ID` (optionnel) ;
+3. Elle a la permission Discord **« Administrateur »** sur le serveur (fonctionne sans aucune config).
+
+```env
+# Exemple : deux admins qui reçoivent les MP et peuvent utiliser /give et /produit
+ADMIN_USER_IDS=111111111111111111,222222222222222222
+# Exemple : tous les membres du rôle "Staff Zach" sont admins du bot
+ADMIN_ROLE_ID=333333333333333333
+```
+
+> 💡 Les commandes `/give` et `/produit` ne sont **visibles et utilisables** que par ces admins. Un retrait via `/give` est **plafonné au solde** du membre (impossible de passer en négatif).
+
+### 📦 Boutique dynamique
+
+La boutique n'est plus figée dans le code : les produits vivent **en base de données**.
+
+- Au premier démarrage, les 2 produits par défaut sont créés (🧰 Zach-checker — 1 000 🪙, 💎 Zach-checker Premium — 5 000 🪙) ;
+- Ajoutez autant de produits que vous voulez avec `/produit ajouter` (jusqu'à **25**, limite des menus Discord) ;
+- Le nom est automatiquement converti en identifiant interne (`Checker Doré` → `checker-dore`) ;
+- L'emoji est vérifié (emoji invalide → 📦 par défaut) pour ne jamais casser l'interface ;
+- Les achats déjà passés restent enregistrés même si le produit est retiré.
 
 ### ⚖️ Règles du casino
 
@@ -118,7 +150,7 @@ npm install
 ### 4. Récupérer votre ID Discord (pour les MP de livraison)
 
 1. Dans Discord : **Paramètres utilisateur → Avancé → Mode développeur** : activé.
-2. Clic droit sur **votre pseudo** → **Copier l'identifiant utilisateur** : c'est votre **ADMIN_USER_ID**.
+2. Clic droit sur **votre pseudo** → **Copier l'identifiant utilisateur** : c'est votre **ADMIN_USER_IDS**.
 
 ### 5. Configurer le bot
 
@@ -136,7 +168,7 @@ Ouvrez `.env` et remplissez au minimum :
 ```env
 DISCORD_TOKEN=le_token_copié_à_l'étape_3
 CLIENT_ID=l_application_id_copié_à_l'étape_3
-ADMIN_USER_ID=votre_id_discord
+ADMIN_USER_IDS=votre_id_discord
 ```
 
 Toutes les variables :
@@ -145,14 +177,16 @@ Toutes les variables :
 |---|---|---|
 | `DISCORD_TOKEN` | ✅ | Le token du bot |
 | `CLIENT_ID` | ✅ | L'ID de l'application |
-| `ADMIN_USER_ID` | ✅* | Votre ID — reçoit les **MP d'achat** et seul à pouvoir utiliser `/give` |
+| `ADMIN_USER_IDS` | ✅* | IDs des admins (MP d'achat + `/give` + `/produit`), séparés par des virgules |
+| `ADMIN_USER_ID` | — | Compatibilité ancienne version (un seul ID) |
+| `ADMIN_ROLE_ID` | — | Rôle Discord dont les membres sont admins du bot |
 | `GUILD_ID` | — | ID d'un serveur de test pour des commandes **instantanées** (dev uniquement) |
 | `PURCHASE_LOG_CHANNEL_ID` | — | Salon où journaliser les achats **en plus** du MP |
 | `DATABASE_DRIVER` | — | `json` (par défaut) ou `postgres` (hébergement gratuit, voir plus bas) |
 | `DATABASE_URL` | — | Chaîne de connexion PostgreSQL (si `postgres`) |
 | `DAILY_REWARD` | — | Coins du `/daily` (défaut : `100`) |
 | `DAILY_COOLDOWN_HOURS` | — | Cooldown du daily en heures (défaut : `24`) |
-| `KEEP_ALIVE` | — | `true` = démarre le mini serveur web anti-endormissement (Render…) |
+| `KEEP_ALIVE` | — | `true` = démarre le mini serveur web anti-endormissement (auto sur Render) |
 | `PORT` | — | Port du keep-alive (défaut : `3000`, fourni automatiquement par Render) |
 
 ### 6. Lancer le bot 🎉
@@ -235,6 +269,7 @@ git push -u origin main
 
 1. Allez sur https://render.com → **Get Started** (connexion avec GitHub).
 2. **New +** → **Web Service**.
+   *(Le dépôt contient un `render.yaml` : vous pouvez aussi choisir **New + → Blueprint**, Render pré-remplit alors toute la configuration et ne vous demande que les valeurs secrètes.)*
 3. Connectez votre dépôt `bot-zach` (Render demande l'accès à GitHub la première fois — autorisez, puis sélectionnez le dépôt).
 4. Configurez le service :
    - **Name** : `zachservices`
@@ -250,7 +285,7 @@ git push -u origin main
    |---|---|
    | `DISCORD_TOKEN` | votre token |
    | `CLIENT_ID` | votre application ID |
-   | `ADMIN_USER_ID` | votre ID Discord |
+   | `ADMIN_USER_IDS` | vos ID Discord (séparés par des virgules) |
    | `DATABASE_DRIVER` | `postgres` |
    | `DATABASE_URL` | la chaîne Neon copiée en A.2 |
    | `KEEP_ALIVE` | `true` |
@@ -293,7 +328,7 @@ Le stockage reste le fichier local `data/zach.json` (persistant, aucune configur
 2. Copiez le dossier du bot, puis :
    ```bash
    npm install
-   cp .env.example .env   # puis remplissez DISCORD_TOKEN, CLIENT_ID, ADMIN_USER_ID
+   cp .env.example .env   # puis remplissez DISCORD_TOKEN, CLIENT_ID, ADMIN_USER_IDS
    npm start
    ```
 3. Pour le lancer en tâche de fond et le relancer au démarrage, installez **pm2** :
@@ -319,35 +354,24 @@ Le stockage reste le fichier local `data/zach.json` (persistant, aucune configur
 
 | Quoi | Où |
 |---|---|
-| Produits, prix, descriptions de la boutique | tableau `products` dans `src/config.js` |
+| **Produits de la boutique** | **en jeu** avec `/produit ajouter|retirer|liste` (admins) — plus besoin de toucher au code |
+| Produits par défaut (premier lancement) | tableau `defaultProducts` dans `src/config.js` |
 | Récompense du daily / cooldown | variables `DAILY_REWARD` et `DAILY_COOLDOWN_HOURS` du `.env` |
 | Mise maximale du casino | `.setMaxValue(...)` dans `src/commands/blackjack.js` et `src/commands/rps.js` |
 | Paiement du blackjack (×2, ×2,5…) | fonction `payoutFor` dans `src/games/blackjack.js` |
 | Textes et couleurs des messages | `src/commands/*` et `src/utils/embeds.js` |
 
-Exemple — ajouter un produit dans `src/config.js` :
-
-```js
-products: [
-  // ...
-  {
-    id: 'zach-custom',
-    name: 'Mon produit',
-    emoji: '🎯',
-    price: 2500,
-    description: 'La description affichée dans /shop.',
-  },
-],
-```
-
 ---
 
-## 🧪 Tests automatisés
+## 🧪 Tests & vérifications (4 commandes)
 
-Le dépôt inclut 47 auto-tests de la logique métier (économie, daily, invitations, blackjack, RPS, boutique) :
+Le dépôt inclut **4 suites de vérification** complémentaires — lancez-les toutes après toute modification :
 
 ```bash
-npm run selftest
+npm run selftest   # 1. Logique métier pure : économie, daily, invitations, blackjack, RPS, boutique (66 tests)
+npm run simulate   # 2. Intégration : les VRAIES commandes exécutées avec de fausses interactions Discord (35 tests)
+npm run verify     # 3. Statique : syntaxe, chargement, contraintes Discord, cohérence du déploiement (103 vérifs)
+npm run typecheck  # 4. Typage : TypeScript en mode vérification sur tout le code source
 ```
 
 ---
@@ -358,12 +382,15 @@ npm run selftest
 |---|---|
 | `An invalid token was provided` | Reset le token (Developer Portal → Bot → **Reset Token**) et mettez à jour `DISCORD_TOKEN` (ou la variable Render). |
 | `Used disallowed intents` | Activez **Server Members Intent** (Developer Portal → Bot → *Privileged Gateway Intents*), puis redémarrez le bot. |
+| `Impossible de démarrer … PostgreSQL` | Vérifiez `DATABASE_URL` (hôte, mot de passe, `?sslmode=require`) et `DATABASE_DRIVER=postgres`. Le message d'erreur précise la cause (authentification, hôte, SSL…). |
+| Le bot affiche `Port déjà utilisé` | Deux instances tournent avec le même `PORT`, ou le port est pris — le bot continue de fonctionner sans serveur web (Render exige le sien). |
 | Les commandes `/...` n'apparaissent pas | Patientez jusqu'à 1 h (propagation globale) ; sinon définissez `GUILD_ID` pour un effet immédiat sur ce serveur ; vérifiez que le lien d'invitation contient `scope=bot applications.commands`. |
+| Les commandes `/give` et `/produit` n'apparaissent pas | Elles sont masquées : seuls les admins (voir section 🛠️) les voient. Ajoutez votre ID dans `ADMIN_USER_IDS` ou utilisez la permission Discord « Administrateur ». |
 | Les invitations ne comptent pas | 1) Le bot doit avoir la permission **Gérer le serveur** (relancez l'URL d'invitation de l'étape 3). 2) *Server Members Intent* activé. 3) Le membre a-t-il utilisé un lien **vanity** ou rejoint pendant que le bot était hors ligne ? 4) Utilisez `/import-invites` pour créditer les anciennes invitations. |
-| Je ne reçois pas les MP d'achat | Vérifiez `ADMIN_USER_ID` (ou la variable Render) ; le bot doit partager un serveur avec vous ; vérifiez que vous n'avez pas bloqué le bot. Un salon `PURCHASE_LOG_CHANNEL_ID` peut servir de secours. |
+| Je ne reçois pas les MP d'achat | Vérifiez `ADMIN_USER_IDS` (ou la variable Render) ; le bot doit partager un serveur avec vous ; vérifiez que vous n'avez pas bloqué le bot. Un salon `PURCHASE_LOG_CHANNEL_ID` peut servir de secours. |
 | Les coins disparaissent après un redéploiement Render | Vous utilisez le stockage `json` sur un disque éphémère. Passez à `DATABASE_DRIVER=postgres` + `DATABASE_URL` Neon (solution A). |
 | Le bot s'endort / se coupe sur Render | Configurez `KEEP_ALIVE=true` **et** un moniteur UptimeRobot (A.4). |
-| `Solde insuffisant` pendant un test | Utilisez `/give @vous 10000` (réservé à `ADMIN_USER_ID`). |
+| `Solde insuffisant` pendant un test | Utilisez `/give @vous 10000` (admins du bot). |
 | Un membre a perdu ses coins suite à un doublon de commande | Les achats sont listés avec un numéro `#id` — retrouvez-les dans la table `purchases` (PostgreSQL) ou `data/zach.json` (local). |
 
 ---
@@ -373,31 +400,36 @@ npm run selftest
 ```
 bot-zach/
 ├── src/
-│   ├── index.js              # Point d'entrée (client, chargements, arrêt propre)
-│   ├── config.js             # Configuration (.env) + produits de la boutique
+│   ├── index.js              # Point d'entrée (client, chargements, retry, arrêt propre)
+│   ├── config.js             # Configuration (.env) + produits par défaut + admins
 │   ├── keepAlive.js          # Mini serveur web anti-endormissement (UptimeRobot)
+│   ├── types.d.ts            # Types pour la vérification statique (tsc)
 │   ├── storage/
 │   │   ├── index.js          # Fabrique de stockage (interface commune)
 │   │   ├── json.js           # Pilote fichier local data/zach.json
 │   │   └── postgres.js       # Pilote PostgreSQL (Neon, transactions atomiques)
 │   ├── services/
-│   │   ├── economy.js        # Solde, /daily (invitation + cooldown), mises
+│   │   ├── economy.js        # Solde, /daily (invitation + cooldown), /give
 │   │   ├── invites.js        # Tracking des invitations (snapshots, attribution)
-│   │   └── shop.js           # Boutique, achat atomique, MP admin, journal
+│   │   └── shop.js           # Boutique dynamique, achat atomique, MP admin
 │   ├── games/
 │   │   ├── blackjack.js      # Logique pure du blackjack (testable)
 │   │   ├── blackjackGame.js  # Partie interactive (boutons Discord)
 │   │   └── rps.js            # Pierre-feuille-ciseaux (logique pure)
 │   ├── flows/
 │   │   └── shopFlow.js       # Menu /shop → modale pseudo → validation achat
-│   ├── commands/             # 10 commandes slash (daily, solde, classement,
-│   │                         # invitations, blackjack, rps, shop, aide, give, import-invites)
+│   ├── commands/             # 11 commandes (daily, solde, classement, invitations,
+│   │                         # blackjack, rps, shop, aide, give, produit, import-invites)
 │   ├── events/               # ready, guildMemberAdd/Remove, inviteCreate/Delete,
-│   │                         # guildCreate, interactionCreate
-│   └── utils/                # Embeds et formatage (coins, durées, dates)
+│   │                         # guildCreate, interactionCreate (+ autocomplétion)
+│   └── utils/                # Embeds, formatage, droits d'administration
 ├── scripts/
-│   └── selftest.js           # 47 tests automatisés (npm run selftest)
+│   ├── selftest.js           # 66 tests de logique (npm run selftest)
+│   ├── simulate.js           # 35 tests d'intégration (npm run simulate)
+│   └── verify.js             # 103 vérifications statiques (npm run verify)
+├── render.yaml               # Blueprint de déploiement Render en 2 clics
 ├── .env.example              # Modèle de configuration
+├── tsconfig.json             # Configuration de la vérification de types
 ├── package.json
 └── README.md
 ```

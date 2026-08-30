@@ -1,12 +1,15 @@
 {
   "name": "zachservices",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ZachServices — Bot Discord : invitations, daily coins, casino (blackjack & pierre-feuille-ciseaux) et boutique Zach-checker.",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "selftest": "node scripts/selftest.js"
+    "selftest": "node scripts/selftest.js",
+    "simulate": "node scripts/simulate.js",
+    "verify": "node scripts/verify.js",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -16,5 +19,10 @@
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
     "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.0"
   }
 }

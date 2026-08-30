@@ -41,7 +41,14 @@ module.exports = {
         },
         {
           name: '📦 Produits en vente',
-          value: config.products.map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)}`).join('\n'),
+          value: config.defaultProducts.map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)}`).join('\n') +
+            '\n_(liste complète et à jour dans `/shop`)_',
+        },
+        {
+          name: '🛠️ Commandes admin',
+          value:
+            '• `/give utilisateur montant` — ajoute/retire des coins\n' +
+            '• `/produit ajouter|retirer|liste` — gère la boutique',
         }
       )
       .setFooter({ text: 'ZachServices • /aide' });

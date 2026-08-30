@@ -1,0 +1,26 @@
+# Blueprint Render — déploiement de ZachServices en 2 clics.
+# Voir README.md (solution A.3) : New + > Blueprint > sélectionner ce dépôt,
+# puis renseigner les valeurs "sync: false" dans le formulaire.
+services:
+  - type: web
+    name: zachservices
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: CLIENT_ID
+        sync: false
+      - key: ADMIN_USER_IDS
+        sync: false
+      - key: DATABASE_DRIVER
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: KEEP_ALIVE
+        value: "true"

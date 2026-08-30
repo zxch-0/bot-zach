@@ -8,13 +8,13 @@ const { fmtCoins } = require('../utils/format');
 
 /** L'utilisateur a choisi un produit dans le menu du /shop */
 async function handleBuySelect(interaction) {
-  const productId = interaction.values[0];
-  const product = shopService.getProduct(productId);
+  const productId = interaction.values && interaction.values[0];
+  const store = interaction.client.store;
+  const product = productId ? await shopService.getProduct(store, productId) : null;
   if (!product) {
-    return interaction.update({ embeds: [errorEmbed('Produit introuvable.')] });
+    return interaction.update({ embeds: [errorEmbed('Ce produit n\'existe plus (boutique mise à jour). Relance `/shop`.')] });
   }
 
-  const store = interaction.client.store;
   const user = await store.getUser(interaction.user.id);
   if (user.balance < product.price) {
     const missing = product.price - user.balance;
@@ -36,9 +36,10 @@ async function handleBuySelect(interaction) {
 /** La modale "pseudo Discord de livraison" a été validée */
 async function handleModal(interaction) {
   const productId = interaction.customId.split(':')[2];
-  const product = shopService.getProduct(productId);
+  const store = interaction.client.store;
+  const product = await shopService.getProduct(store, productId);
   if (!product) {
-    return interaction.reply({ embeds: [errorEmbed('Produit introuvable.')], ephemeral: true });
+    return interaction.reply({ embeds: [errorEmbed('Ce produit n\'existe plus. Relance `/shop`.')], ephemeral: true });
   }
 
   const deliveryUsername = (interaction.fields.getTextInputValue('delivery_username') || '').trim();
@@ -46,13 +47,11 @@ async function handleModal(interaction) {
     return interaction.reply({ embeds: [errorEmbed('Pseudo de livraison manquant.')], ephemeral: true });
   }
 
-  const store = interaction.client.store;
   const result = await shopService.processPurchase({
     store,
     buyer: interaction.user,
     product,
     deliveryUsername,
-    guildName: interaction.guild ? interaction.guild.name : 'DM',
   });
 
   if (!result.ok) {
@@ -65,7 +64,7 @@ async function handleModal(interaction) {
     return interaction.reply({ embeds: [errorEmbed('Erreur pendant l\'achat, réessaie.')], ephemeral: true });
   }
 
-  // Prévenir l'admin (+ journal salon)
+  // Prévenir les admins (+ journal salon)
   const failures = await shopService.notifyPurchase({
     client: interaction.client,
     buyer: interaction.user,

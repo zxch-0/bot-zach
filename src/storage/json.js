@@ -16,8 +16,13 @@ function emptyDb() {
     inviteCounts: {}, // inviterId -> { count, imported }
     joinRecords: {}, // memberId -> { inviterId, joinedAt, leftAt }
     purchases: [], // { id, userId, username, deliveryUsername, productId, price, createdAt }
+    products: [], // { id, name, emoji, price, description, createdAt }
   };
 }
+
+// Le handler "exit" ne doit être enregistré qu'une fois par process,
+// même si plusieurs stores sont créés (tests).
+let exitHandlerRegistered = false;
 
 class JsonStore extends Store {
   constructor(filePath) {
@@ -39,8 +44,21 @@ class JsonStore extends Store {
         try { fs.copyFileSync(this.filePath, backup); } catch {}
       }
     }
+
+    // Produits par défaut au premier lancement
+    if (!Array.isArray(this.db.products) || this.db.products.length === 0) {
+      this.db.products = require('../config').defaultProducts.map((p, i) => ({ ...p, createdAt: i }));
+      this._saveSync();
+      console.log(`[boutique] ${this.db.products.length} produit(s) par défaut créé(s)`);
+    }
+
     // Sauvegarde de sécurité à la fermeture du process
-    process.on('exit', () => this._saveSync());
+    if (!exitHandlerRegistered) {
+      exitHandlerRegistered = true;
+      process.on('exit', () => {
+        try { this._saveSync(); } catch {}
+      });
+    }
   }
 
   async close() {
@@ -174,6 +192,31 @@ class JsonStore extends Store {
     this.db.purchases.push({ id, ...purchase });
     this._scheduleSave();
     return id;
+  }
+
+  /* --- Produits de la boutique --- */
+
+  async listProducts() {
+    return [...(this.db.products || [])];
+  }
+
+  async getProductById(productId) {
+    return (this.db.products || []).find((p) => p.id === productId) || null;
+  }
+
+  async addProduct(product) {
+    this.db.products.push(product);
+    this._scheduleSave();
+    return product;
+  }
+
+  async removeProduct(productId) {
+    const list = this.db.products || [];
+    const index = list.findIndex((p) => p.id === productId);
+    if (index === -1) return null;
+    const [removed] = list.splice(index, 1);
+    this._scheduleSave();
+    return removed;
   }
 }
 

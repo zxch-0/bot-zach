@@ -12,6 +12,17 @@ module.exports = {
 
   async execute(interaction) {
     try {
+      // --- Autocomplétion (ex : /produit retirer) ---
+      if (interaction.isAutocomplete()) {
+        const command = interaction.client.commands.get(interaction.commandName);
+        if (command && typeof command.autocomplete === 'function') {
+          await command.autocomplete(interaction);
+        } else {
+          try { await interaction.respond([]); } catch {}
+        }
+        return;
+      }
+
       // --- Commandes slash ---
       if (interaction.isChatInputCommand()) {
         const command = interaction.client.commands.get(interaction.commandName);

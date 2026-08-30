@@ -35,7 +35,50 @@ CREATE TABLE IF NOT EXISTS purchases (
   price BIGINT NOT NULL,
   created_at BIGINT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS products (
+  product_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  emoji TEXT NOT NULL DEFAULT '📦',
+  price BIGINT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  position BIGINT NOT NULL,
+  created_by TEXT
+);
 `;
+
+/** Traduit les erreurs PostgreSQL courantes en message actionnable. */
+function friendlyDbError(err) {
+  const code = err?.code || '';
+  const msg = err?.message || String(err);
+  if (code === 'ECONNREFUSED' || msg.includes('ECONNREFUSED')) {
+    return new Error('Connexion PostgreSQL refusée (ECONNREFUSED) — vérifiez l\'hôte et le port de DATABASE_URL.');
+  }
+  if (code === '28P01' || msg.includes('password authentication failed')) {
+    return new Error('Authentification PostgreSQL refusée — vérifiez utilisateur/mot de passe dans DATABASE_URL.');
+  }
+  if (code === '3D000' || msg.includes('does not exist')) {
+    return new Error('Base PostgreSQL introuvable — vérifiez le nom de la base dans DATABASE_URL.');
+  }
+  if (code === 'ETIMEDOUT' || code === 'ENOTFOUND' || code === 'EAI_AGAIN' || msg.includes('getaddrinfo')) {
+    return new Error('Hôte PostgreSQL introuvable ou injoignable — vérifiez l\'URL de DATABASE_URL (et votre connexion réseau).');
+  }
+  if (msg.includes('SSL') || msg.includes('ssl') || code === '57P03') {
+    return new Error(`Problème SSL/serveur PostgreSQL : ${msg} — la chaîne doit généralement finir par ?sslmode=require (Neon).`);
+  }
+  return new Error(`PostgreSQL : ${msg}`);
+}
+
+/** Convertit une ligne SQL en produit. */
+function rowToProduct(r) {
+  return {
+    id: r.product_id,
+    name: r.name,
+    emoji: r.emoji || '📦',
+    price: Number(r.price),
+    description: r.description || '',
+    createdAt: Number(r.position),
+  };
+}
 
 class PostgresStore extends Store {
   constructor(connectionString) {
@@ -59,13 +102,47 @@ class PostgresStore extends Store {
   }
 
   async init() {
-    await this.pool.query(SCHEMA);
+    // Un idle client qui tombe (réseau, base en pause) émet 'error' sur le pool :
+    // sans listener, le process planterait. On log et on continue.
+    this.pool.on('error', (err) => {
+      console.error('[postgres] Erreur d\'un client inactif (le bot continue) :', err.message);
+    });
+
+    try {
+      await this.pool.query(SCHEMA);
+    } catch (err) {
+      throw friendlyDbError(err);
+    }
+
+    // Produits par défaut au premier démarrage
+    try {
+      const { rows } = await this.pool.query('SELECT COUNT(*)::int AS n FROM products');
+      if (rows[0].n === 0) {
+        const defaults = require('../config').defaultProducts;
+        for (let i = 0; i < defaults.length; i++) {
+          const p = defaults[i];
+          await this.pool.query(
+            `INSERT INTO products (product_id, name, emoji, price, description, position, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, 'system')
+             ON CONFLICT (product_id) DO NOTHING`,
+            [p.id, p.name, p.emoji, p.price, p.description, i]
+          );
+        }
+        console.log(`[boutique] ${defaults.length} produit(s) par défaut créé(s)`);
+      }
+    } catch (err) {
+      throw friendlyDbError(err);
+    }
   }
 
   async close() {
     await this.pool.end();
   }
 
+  /**
+   * Requête générique -> tableau de lignes.
+   * @param {string} sql @param {any[]} [params] @returns {Promise<any[]>}
+   */
   async query(sql, params) {
     const res = await this.pool.query(sql, params);
     return res.rows;
@@ -219,6 +296,32 @@ class PostgresStore extends Store {
       [purchase.userId, purchase.username, purchase.deliveryUsername, purchase.productId, purchase.price, purchase.createdAt]
     );
     return Number(rows[0].id);
+  }
+
+  /* --- Produits de la boutique --- */
+
+  async listProducts() {
+    const rows = await this.query('SELECT * FROM products ORDER BY position ASC');
+    return rows.map(rowToProduct);
+  }
+
+  async getProductById(productId) {
+    const rows = await this.query('SELECT * FROM products WHERE product_id = $1', [productId]);
+    return rows.length ? rowToProduct(rows[0]) : null;
+  }
+
+  async addProduct(product) {
+    await this.query(
+      `INSERT INTO products (product_id, name, emoji, price, description, position, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [product.id, product.name, product.emoji, product.price, product.description, product.createdAt, product.createdBy || null]
+    );
+    return product;
+  }
+
+  async removeProduct(productId) {
+    const rows = await this.query('DELETE FROM products WHERE product_id = $1 RETURNING *', [productId]);
+    return rows.length ? rowToProduct(rows[0]) : null;
   }
 }
 

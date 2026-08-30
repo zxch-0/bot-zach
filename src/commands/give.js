@@ -1,10 +1,14 @@
 // ============================================================
-// /give — (admin) crédite ou retire des coins à un membre.
-// Réservé à ADMIN_USER_ID (fichier .env).
+// /give — commande admin : crédite ou retire des coins.
+// Est admin du bot si (au choix, voir .env) :
+//   • ID listé dans ADMIN_USER_IDS / ADMIN_USER_ID
+//   • porteur du rôle ADMIN_ROLE_ID
+//   • permission Discord "Administrateur" (fonctionne sans config)
+// Un retrait est plafonné au solde actuel (jamais négatif).
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType, PermissionFlagsBits } = require('discord.js');
-const config = require('../config');
 const economy = require('../services/economy');
+const { isAdminInteraction } = require('../utils/permissions');
 const { baseEmbed, COLORS, errorEmbed } = require('../utils/embeds');
 const { fmtCoins } = require('../utils/format');
 
@@ -25,25 +29,31 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!config.adminUserId || interaction.user.id !== config.adminUserId) {
-      return interaction.reply({ embeds: [errorEmbed('Commande réservée à l\'administrateur du bot.')], ephemeral: true });
+    if (!isAdminInteraction(interaction)) {
+      return interaction.reply({
+        embeds: [errorEmbed('Commande réservée aux administrateurs du bot (voir la configuration `ADMIN_USER_IDS`).')],
+        ephemeral: true,
+      });
     }
 
     const target = interaction.options.getUser('utilisateur');
     const amount = interaction.options.getInteger('montant');
-    if (amount === 0 || target.bot) {
-      return interaction.reply({ embeds: [errorEmbed('Montant invalide ou cible bot.')], ephemeral: true });
+    if (amount === 0) {
+      return interaction.reply({ embeds: [errorEmbed('Le montant ne peut pas être 0.')], ephemeral: true });
+    }
+    if (!target || target.bot) {
+      return interaction.reply({ embeds: [errorEmbed('Cible invalide (les bots ne peuvent pas recevoir de coins).')], ephemeral: true });
     }
 
     const store = interaction.client.store;
-    const newBalance = await economy.credit(store, target.id, amount);
+    const { balance, clamped } = await economy.adminAdjust(store, target.id, amount);
 
-    const embed = baseEmbed(COLORS.success)
-      .setTitle('🪙 Coins modifiés')
-      .setDescription(
-        `${amount > 0 ? '➕ Ajouté' : '➖ Retiré'} **${fmtCoins(Math.abs(amount))}** à <@${target.id}>.\n` +
-          `💰 Nouveau solde : **${fmtCoins(newBalance)}**`
-      );
+    const description =
+      `${amount > 0 ? '➕ Ajouté' : '➖ Retiré'} **${fmtCoins(Math.abs(amount))}** à <@${target.id}>.\n` +
+      `💰 Nouveau solde : **${fmtCoins(balance)}**` +
+      (clamped ? '\nℹ️ Le retrait a été plafonné au solde disponible (le solde ne descend jamais sous 0).' : '');
+
+    const embed = baseEmbed(COLORS.success).setTitle('🪙 Coins modifiés').setDescription(description);
     return interaction.reply({ embeds: [embed], ephemeral: true });
   },
 };
