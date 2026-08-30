@@ -241,7 +241,13 @@ async function handleButton(interaction, game) {
       ephemeral: true,
     });
   }
-  if (game.finished || game.settled || game.busy) return;
+  if (game.finished || game.settled) {
+    return interaction.reply({
+      embeds: [errorEmbedGame('Cette partie est **terminée** ! Lance une nouvelle partie avec `/blackjack`.')],
+      ephemeral: true,
+    });
+  }
+  if (game.busy) return; // un autre clic est déjà en cours de traitement
 
   game.busy = true;
   try {

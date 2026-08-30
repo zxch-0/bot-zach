@@ -13,6 +13,7 @@ const economy = require('../src/services/economy');
 const blackjack = require('../src/games/blackjack');
 const rps = require('../src/games/rps');
 const shopService = require('../src/services/shop');
+const invitesService = require('../src/services/invites');
 const config = require('../src/config');
 
 let passed = 0;
@@ -156,6 +157,73 @@ function check(name, condition) {
   await economy.adminAdjust(store, 'u5', 100);
   const removeSome = await economy.adminAdjust(store, 'u5', -40);
   check('retrait partiel 100-40=60', removeSome.balance === 60 && removeSome.clamped === false);
+
+  console.log('\n━ 🎟️  Attribution des invitations (service, faux serveur)');
+  invitesService.resetTrackingState();
+  const mkInvite = (code, uses, inviterId) => ({ code, uses, inviter: { id: inviterId } });
+  let invitesList = [mkInvite('aaa', 5, 'invA'), mkInvite('bbb', 3, 'invB')];
+  const fakeGuild = {
+    id: 'guild-test',
+    name: 'ServeurTest',
+    vanityURLCode: null,
+    invites: { fetch: async () => new Map(invitesList.map((i) => [i.code, i])) },
+    fetchVanityURL: async () => ({ uses: 0 }),
+  };
+  check('syncGuild ok avec la permission', (await invitesService.syncGuild(fakeGuild)) === true);
+
+  // 1) compteur qui monte → bon inviteur
+  invitesList = [mkInvite('aaa', 6, 'invA'), mkInvite('bbb', 3, 'invB')];
+  let attr = await invitesService.attributeJoin(fakeGuild);
+  check('compteur +1 → inviteur crédité', attr && attr.inviterId === 'invA');
+
+  // 2) nouveau lien créé et utilisé entre deux photos
+  invitesList = [mkInvite('aaa', 6, 'invA'), mkInvite('bbb', 3, 'invB'), mkInvite('ccc', 1, 'invC')];
+  attr = await invitesService.attributeJoin(fakeGuild);
+  check('nouveau lien utilisé → son créateur crédité', attr && attr.inviterId === 'invC');
+
+  // 3) invitation à usage unique : lien SUPPRIMÉ par Discord quand il sert
+  invitesList = [mkInvite('once', 0, 'invOnce'), mkInvite('aaa', 6, 'invA')];
+  await invitesService.syncGuild(fakeGuild);
+  invitesService.onInviteDelete({ code: 'once', guild: { id: fakeGuild.id } }); // Discord supprime le lien épuisé
+  invitesList = [mkInvite('aaa', 6, 'invA')]; // le lien a disparu des invitations
+  attr = await invitesService.attributeJoin(fakeGuild);
+  check('lien à usage unique épuisé → créateur retrouvé via la mémoire courte', attr && attr.inviterId === 'invOnce');
+
+  // 4) cas ambigu : deux liens supprimés récemment → on ne devine pas
+  invitesService.onInviteDelete({ code: 'x1', guild: { id: fakeGuild.id } });
+  // (x1 inconnu du snapshot → non mémorisé ; on mémorise via le snapshot cette fois)
+  invitesList = [mkInvite('y1', 2, 'invY1'), mkInvite('y2', 2, 'invY2')];
+  await invitesService.syncGuild(fakeGuild);
+  invitesService.onInviteDelete({ code: 'y1', guild: { id: fakeGuild.id } });
+  invitesService.onInviteDelete({ code: 'y2', guild: { id: fakeGuild.id } });
+  invitesList = [];
+  attr = await invitesService.attributeJoin(fakeGuild);
+  check('deux suppressions récentes → aucune attribution hasardeuse', attr === null);
+
+  // 5) arrivées simultanées sérialisées : chacune voit l'état mis à jour
+  invitesService.resetTrackingState();
+  let fetchCount = 0;
+  invitesList = [mkInvite('aaa', 10, 'invA')];
+  const seqGuild = {
+    id: 'guild-seq',
+    name: 'ServeurTest',
+    vanityURLCode: null,
+    invites: {
+      fetch: async () => {
+        fetchCount += 1;
+        return new Map([[ 'aaa', mkInvite('aaa', 10 + fetchCount, 'invA') ]]);
+      },
+    },
+    fetchVanityURL: async () => ({ uses: 0 }),
+  };
+  await invitesService.syncGuild(seqGuild);
+  const [r1, r2] = await Promise.all([
+    invitesService.attributeJoin(seqGuild),
+    invitesService.attributeJoin(seqGuild),
+  ]);
+  check('arrivées simultanées : la 1re voit 11, la 2e voit 12 (sérialisées)',
+    r1 && r1.inviterId === 'invA' && r2 && r2.inviterId === 'invA' && fetchCount === 3);
+  invitesService.resetTrackingState();
 
   console.log('\n━ ⚡ Concurrence (débits simultanés)');
   await store.credit('u9', 1000);

@@ -94,6 +94,8 @@ Le croupier du blackjack tire jusqu'à atteindre 17 et s'arrête. La mise est **
 
 - Le bot photographie les compteurs de **tous les liens d'invitation** du serveur.
 - Quand un membre arrive, le lien dont le compteur a monté identifie **l'inviteur**, qui est crédité.
+- Les **liens à usage unique** (supprimés par Discord à la première utilisation) sont reconnus grâce à une mémoire courte des liens récemment supprimés.
+- Les **arrivées simultanées** sont traitées l'une après l'autre (pas de mauvaise attribution).
 - Une invitation est **réussie** tant que le membre invité **reste** sur le serveur (s'il part, elle est décomptée).
 - 🛡️ Anti-triche : rejoindre avec **son propre** lien d'invitation ne compte pas ; les bots ne comptent pas.
 - ⚠️ Les liens **vanity** (`discord.gg/mon-serveur`) n'ont pas de créateur : ces arrivées ne crédite­nt personne.
@@ -369,10 +371,11 @@ Le dépôt inclut **5 suites de vérification** complémentaires — lancez-les 
 
 ```bash
 npm run selftest   # 1. Logique métier : économie, daily, invitations, blackjack, RPS, boutique,
-                   #    concurrence (30 débits simultanés), intégrité du sabot, plafond 25 produits (72 tests)
+                   #    attribution des invitations (liens à usage unique, arrivées simultanées),
+                   #    concurrence (30 débits simultanés), sabot, plafond 25 produits (78 tests)
 npm run simulate   # 2. Intégration : les VRAIES commandes avec de fausses interactions Discord —
                    #    daily, achat complet (modale → débit → MP admin), blackjack boutons, anti-hijack,
-                   #    anti double-règlement, remboursement si message inaccessible (44 tests)
+                   #    anti double-règlement, remboursement si message inaccessible (45 tests)
 npm run test-pg    # 3. Couche SQL : les VRAIES requêtes PostgreSQL exécutées sur une base émulée
                    #    (pg-mem) — schéma, seed, débits atomiques concurrents, transactions (41 tests)
 npm run verify     # 4. Statique : syntaxe, chargement, contraintes Discord, cohérence du déploiement (103 vérifs)
@@ -397,6 +400,7 @@ npm run typecheck  # 5. Typage : TypeScript en mode vérification sur tout le co
 | Le bot s'endort / se coupe sur Render | Configurez `KEEP_ALIVE=true` **et** un moniteur UptimeRobot (A.4). |
 | `Solde insuffisant` pendant un test | Utilisez `/give @vous 10000` (admins du bot). |
 | Un membre a perdu ses coins suite à un doublon de commande | Les achats sont listés avec un numéro `#id` — retrouvez-les dans la table `purchases` (PostgreSQL) ou `data/zach.json` (local). |
+| Le bot a redémarré pendant une partie de `/blackjack` | La partie (en mémoire) est perdue et la mise avec. Les boutons répondent « partie terminée » ; évitez de redémarrer pendant des parties actives. Compensez avec `/give` si besoin. |
 
 ---
 
@@ -429,8 +433,8 @@ bot-zach/
 │   │                         # guildCreate, interactionCreate (+ autocomplétion)
 │   └── utils/                # Embeds, formatage, droits d'administration
 ├── scripts/
-│   ├── selftest.js           # 72 tests de logique (npm run selftest)
-│   ├── simulate.js           # 44 tests d'intégration (npm run simulate)
+│   ├── selftest.js           # 78 tests de logique (npm run selftest)
+│   ├── simulate.js           # 45 tests d'intégration (npm run simulate)
 │   ├── test-postgres.js      # 41 tests SQL sur base émulée pg-mem (npm run test-pg)
 │   └── verify.js             # 103 vérifications statiques (npm run verify)
 ├── render.yaml               # Blueprint de déploiement Render en 2 clics

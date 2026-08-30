@@ -306,7 +306,9 @@ async function main() {
   check('un seul règlement (pas de double crédit)', balanceAfterStand === balanceAfterDoubleStand);
   // la mise (100) a été débitée AU LANCEMENT : perte = +0, égalité = +100, gain = +200
   check('partie soldée une fois (perte / remboursement / gain)', [balanceBeforeStand, balanceBeforeStand + 100, balanceBeforeStand + 200].includes(balanceAfterStand));
-  check('boutons désactivés après le règlement', standBtn.updates.length === 1 && standBtn.updates[0].components[0].components.every((b) => b.data.disabled === true));
+  // le 1er update = plateau final (boutons désactivés), le 2e clic reçoit « partie terminée »
+  check('boutons désactivés après le règlement', standBtn.updates.length >= 1 && standBtn.updates[0].components[0].components.every((b) => b.data.disabled === true));
+  check('clic après la fin → message « partie terminée »', standBtn.updates.length >= 2 && /termin\u00e9e/i.test(embedText(standBtn.updates[1])) && standBtn.updates[1].ephemeral === true);
 
   // BUG corrigé 3 : fetchReply qui échoue → remboursement + partie nettoyée
   // (utilise un 3e utilisateur : les deux premiers ont déjà une partie active)

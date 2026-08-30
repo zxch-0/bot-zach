@@ -12,6 +12,14 @@ module.exports = {
     .setDescription('Présente ZachServices : commandes, règles et boutique'),
 
   async execute(interaction) {
+    // Produits réels de la boutique (pas la liste statique de config)
+    let products = [];
+    try {
+      products = await interaction.client.store.listProducts();
+    } catch {
+      products = config.defaultProducts;
+    }
+
     const embed = baseEmbed(COLORS.primary)
       .setTitle('👑 ZachServices — Aide')
       .setDescription(
@@ -41,7 +49,10 @@ module.exports = {
         },
         {
           name: '📦 Produits en vente',
-          value: config.defaultProducts.map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)}`).join('\n') +
+          value:
+            (products.length
+              ? products.map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)}`).join('\n')
+              : 'Boutique vide pour le moment') +
             '\n_(liste complète et à jour dans `/shop`)_',
         },
         {
