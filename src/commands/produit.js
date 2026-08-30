@@ -42,7 +42,7 @@ module.exports = {
             .setMaxLength(shopService.DESCRIPTION_MAX)
         )
         .addStringOption((option) =>
-          option.setName('emoji').setDescription('Emoji du produit (ex : 🧰)').setRequired(false).setMaxLength(32)
+          option.setName('emoji').setDescription('Emoji du produit (ex : 🧰)').setRequired(false).setMaxLength(64)
         )
     )
     .addSubcommand((sub) =>

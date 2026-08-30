@@ -239,8 +239,109 @@ async function main() {
   check('MP contient acheteur + produit + pseudo', /joueur/.test(embedText(dm.payload)) && /Premium/.test(embedText(dm.payload)) && /pseudo-livraison/.test(embedText(dm.payload)));
   check('MP envoyé à l\'admin 2 aussi', client._sentDMs.some((d) => d.to === '999000999000999001'));
 
-  console.log('\n━ 🃏 /blackjack (partie complète simulée)');
-  await store.credit(joueur.id, 500);
+  console.log('\n━ 🃏 /blackjack — régressions sécurité (double règlement, hijack, fetchReply)');
+  // Le joueur garde une partie A active ; un autre joueur B a aussi sa partie.
+  await store.credit(joueur.id, 400);
+  await store.credit('100000000000000003', 400);
+  const otherUser = { id: '100000000000000003', username: 'autre', bot: false };
+
+  const startFor = async (user) => {
+    const it = makeCommandInteraction({
+      client,
+      user,
+      async fetchReply() {
+        return { id: `msg-${user.id}`, createMessageComponentCollector: () => ({ on() {}, stop() {} }) };
+      },
+    });
+    await blackjackGame.startBlackjack(it, 100);
+    return blackjackGame.activeGames.get(user.id);
+  };
+
+  // Relance jusqu'à obtenir une partie interactive (ni blackjack naturel)
+  let gameA = null;
+  for (let i = 0; i < 50 && !gameA; i++) {
+    gameA = await startFor(joueur);
+    if (gameA) break;
+    await store.credit(joueur.id, 100);
+  }
+  let gameB = null;
+  for (let i = 0; i < 50 && !gameB; i++) {
+    gameB = await startFor(otherUser);
+    if (gameB) break;
+    await store.credit('100000000000000003', 100);
+  }
+  check('deux parties indépendantes actives', !!gameA && !!gameB && gameA !== gameB);
+
+  // BUG corrigé 1 : B (qui a SA partie en cours) clique sur les boutons du
+  // message de A → doit être refusé. On passe la partie de B au handler, comme
+  // le ferait le routeur (activeGames.get(B)) : seul le garde "message" peut
+  // détecter le détournement.
+  const hijackReplies = [];
+  const hijackBtn = {
+    user: otherUser, // B...
+    message: { id: gameA.message.id }, // ...clique sur le message de A
+    customId: 'bj:stand',
+    async reply(p) { hijackReplies.push(p); return {}; },
+    async update(p) { hijackReplies.push(p); return {}; },
+  };
+  const balanceBBefore = (await store.getUser(otherUser.id)).balance;
+  await blackjackGame.handleButton(hijackBtn, gameB);
+  check('hijack refusé : clic de B sur le message de A', /pas ta partie/i.test(embedText(hijackReplies[0])) && hijackReplies[0].ephemeral === true);
+  check('la partie de B reste intacte (non réglée, solde inchangé)', gameB.settled === false && (await store.getUser(otherUser.id)).balance === balanceBBefore);
+
+  // BUG corrigé 2 : double règlement — stand puis re-stand simultané
+  const balanceBeforeStand = (await store.getUser(joueur.id)).balance;
+  const standBtn = {
+    user: joueur,
+    message: { id: gameA.message.id },
+    customId: 'bj:stand',
+    updates: [],
+    async update(p) { this.updates.push(p); return {}; },
+    async reply(p) { this.updates.push(p); return {}; },
+  };
+  await blackjackGame.handleButton(standBtn, gameA); // 1er stand → règle la partie
+  const balanceAfterStand = (await store.getUser(joueur.id)).balance;
+  await blackjackGame.handleButton(standBtn, gameA); // 2e stand (déjà réglée) → ignoré
+  const balanceAfterDoubleStand = (await store.getUser(joueur.id)).balance;
+  check('un seul règlement (pas de double crédit)', balanceAfterStand === balanceAfterDoubleStand);
+  // la mise (100) a été débitée AU LANCEMENT : perte = +0, égalité = +100, gain = +200
+  check('partie soldée une fois (perte / remboursement / gain)', [balanceBeforeStand, balanceBeforeStand + 100, balanceBeforeStand + 200].includes(balanceAfterStand));
+  check('boutons désactivés après le règlement', standBtn.updates.length === 1 && standBtn.updates[0].components[0].components.every((b) => b.data.disabled === true));
+
+  // BUG corrigé 3 : fetchReply qui échoue → remboursement + partie nettoyée
+  // (utilise un 3e utilisateur : les deux premiers ont déjà une partie active)
+  const thirdUser = { id: '100000000000000004', username: 'troisieme', bot: false };
+  const failReplies = [];
+  const failIt = makeCommandInteraction({
+    client,
+    user: thirdUser,
+    async fetchReply() { throw new Error('raté réseau'); },
+    async followUp(p) { failReplies.push(p); return {}; },
+  });
+  // Un blackjack naturel (~5 %) règle la partie AVANT fetchReply : on retente
+  // jusqu'à atteindre le vrai chemin fetchReply (solde remis à 300 à chaque tour)
+  let fetchReplyPathReached = false;
+  for (let i = 0; i < 40 && !fetchReplyPathReached; i++) {
+    const bal = (await store.getUser(thirdUser.id)).balance;
+    if (bal > 300) await store.debit(thirdUser.id, bal - 300);
+    else if (bal < 300) await store.credit(thirdUser.id, 300 - bal);
+    failReplies.length = 0;
+    await blackjackGame.startBlackjack(failIt, 100);
+    fetchReplyPathReached = failReplies.length > 0;
+  }
+  check('échec fetchReply → mise remboursée', fetchReplyPathReached && (await store.getUser(thirdUser.id)).balance === 300);
+  check('échec fetchReply → aucune partie bloquée', !blackjackGame.isPlaying(thirdUser.id));
+  check('échec fetchReply → message d\'erreur envoyé', fetchReplyPathReached && /remboursée/i.test(embedText(failReplies[0])));
+
+  // Nettoyage de la partie B restante pour la suite
+  if (gameB && blackjackGame.activeGames.has(otherUser.id)) {
+    gameB.settled = true;
+    gameB.finished = true;
+    blackjackGame.activeGames.delete(otherUser.id);
+    await store.credit(otherUser.id, 100);
+  }
+
+  console.log('\n━ 🃏 /blackjack (déroulé normal)');
   const bjReplies = [];
   const bjInteraction = {
     client,
@@ -282,6 +383,7 @@ async function main() {
   check('une partie interactive démarre', !!game);
 
   if (game) {
+    const balanceBefore = (await store.getUser(joueur.id)).balance; // après débit de la mise
     const updates = [];
     const btn = {
       user: joueur,
@@ -298,30 +400,35 @@ async function main() {
     check('plus de partie active après la fin', !blackjackGame.isPlaying(joueur.id));
 
     const balanceAfter = (await store.getUser(joueur.id)).balance;
-    check('solde cohérent (400 perdant / 500 égalité / 600 gagnant)', [400, 500, 600].includes(balanceAfter));
+    // mise (100) déjà débitée au lancement : perte = solde inchangé, égalité = +100, gain = +200
+    check('solde cohérent après règlement', [balanceBefore, balanceBefore + 100, balanceBefore + 200].includes(balanceAfter));
   }
 
-  // Double partie interdite
+  // Double partie interdite (un blackjack naturel sur la 1re partie laisserait
+  // la 2e démarrer : on boucle jusqu'au vrai cas "partie déjà en cours")
   await store.credit(joueur.id, 100);
-  const bjIt1 = makeCommandInteraction({
+  const makeBjIt = () => makeCommandInteraction({
     client,
     user: joueur,
     async fetchReply() {
       return { createMessageComponentCollector: () => ({ on() {}, stop() {} }) };
     },
   });
-  const bjIt2 = makeCommandInteraction({
-    client,
-    user: joueur,
-    async fetchReply() {
-      return { createMessageComponentCollector: () => ({ on() {}, stop() {} }) };
-    },
-  });
-  await blackjackGame.startBlackjack(bjIt1, 50);
-  await blackjackGame.startBlackjack(bjIt2, 50);
-  check('double partie détectée', /déjà une.*partie/i.test(embedText(bjIt2.replies[0])));
+  let sawDoubleGame = false;
+  for (let i = 0; i < 40 && !sawDoubleGame; i++) {
+    await blackjackGame.startBlackjack(makeBjIt(), 50);
+    const second = makeBjIt();
+    await blackjackGame.startBlackjack(second, 50);
+    sawDoubleGame = /déjà une.*partie/i.test(embedText(second.replies[0]));
+    if (!sawDoubleGame) {
+      // la 1re était un naturel ET la 2e a démarré : on nettoie la partie en cours
+      const g = blackjackGame.activeGames.get(joueur.id);
+      if (g) { g.settled = true; g.finished = true; blackjackGame.activeGames.delete(joueur.id); await store.credit(joueur.id, 50); }
+    }
+  }
+  check('double partie détectée', sawDoubleGame);
   const g2 = blackjackGame.activeGames.get(joueur.id);
-  if (g2) { g2.finished = true; blackjackGame.activeGames.delete(joueur.id); await store.credit(joueur.id, 50); }
+  if (g2) { g2.settled = true; g2.finished = true; blackjackGame.activeGames.delete(joueur.id); await store.credit(joueur.id, 50); }
 
   console.log('\n━ ✂️  /rps');
   await store.credit(joueur.id, 100);

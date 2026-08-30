@@ -81,8 +81,18 @@ function rowToProduct(r) {
 }
 
 class PostgresStore extends Store {
-  constructor(connectionString) {
+  /**
+   * Permet d'injecter un pool de test (ex : pg-mem) pour valider les
+   * requêtes sans base réelle.
+   * @param {string} connectionString
+   * @param {{ pool?: any }} [options]
+   */
+  constructor(connectionString, { pool } = {}) {
     super();
+    if (pool) {
+      this.pool = pool;
+      return;
+    }
     if (!connectionString) {
       throw new Error('DATABASE_URL est vide : impossible d\'utiliser le pilote postgres.');
     }
@@ -168,7 +178,7 @@ class PostgresStore extends Store {
   async credit(userId, amount) {
     await this.getUser(userId); // crée la ligne si besoin
     const rows = await this.query(
-      'UPDATE users SET balance = balance + $2 WHERE user_id = $1 RETURNING balance',
+      'UPDATE users SET balance = balance + $2::BIGINT WHERE user_id = $1 RETURNING balance',
       [userId, amount]
     );
     return Number(rows[0].balance);
@@ -178,7 +188,7 @@ class PostgresStore extends Store {
     await this.getUser(userId);
     // Atomique : ne débite que si le solde suffit
     const rows = await this.query(
-      'UPDATE users SET balance = balance - $2 WHERE user_id = $1 AND balance >= $2 RETURNING balance',
+      'UPDATE users SET balance = balance - $2::BIGINT WHERE user_id = $1 AND balance >= $2::BIGINT RETURNING balance',
       [userId, amount]
     );
     return rows.length ? Number(rows[0].balance) : null;

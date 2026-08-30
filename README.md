@@ -363,15 +363,20 @@ Le stockage reste le fichier local `data/zach.json` (persistant, aucune configur
 
 ---
 
-## 🧪 Tests & vérifications (4 commandes)
+## 🧪 Tests & vérifications (5 suites)
 
-Le dépôt inclut **4 suites de vérification** complémentaires — lancez-les toutes après toute modification :
+Le dépôt inclut **5 suites de vérification** complémentaires — lancez-les toutes après toute modification :
 
 ```bash
-npm run selftest   # 1. Logique métier pure : économie, daily, invitations, blackjack, RPS, boutique (66 tests)
-npm run simulate   # 2. Intégration : les VRAIES commandes exécutées avec de fausses interactions Discord (35 tests)
-npm run verify     # 3. Statique : syntaxe, chargement, contraintes Discord, cohérence du déploiement (103 vérifs)
-npm run typecheck  # 4. Typage : TypeScript en mode vérification sur tout le code source
+npm run selftest   # 1. Logique métier : économie, daily, invitations, blackjack, RPS, boutique,
+                   #    concurrence (30 débits simultanés), intégrité du sabot, plafond 25 produits (72 tests)
+npm run simulate   # 2. Intégration : les VRAIES commandes avec de fausses interactions Discord —
+                   #    daily, achat complet (modale → débit → MP admin), blackjack boutons, anti-hijack,
+                   #    anti double-règlement, remboursement si message inaccessible (44 tests)
+npm run test-pg    # 3. Couche SQL : les VRAIES requêtes PostgreSQL exécutées sur une base émulée
+                   #    (pg-mem) — schéma, seed, débits atomiques concurrents, transactions (41 tests)
+npm run verify     # 4. Statique : syntaxe, chargement, contraintes Discord, cohérence du déploiement (103 vérifs)
+npm run typecheck  # 5. Typage : TypeScript en mode vérification sur tout le code source
 ```
 
 ---
@@ -424,8 +429,9 @@ bot-zach/
 │   │                         # guildCreate, interactionCreate (+ autocomplétion)
 │   └── utils/                # Embeds, formatage, droits d'administration
 ├── scripts/
-│   ├── selftest.js           # 66 tests de logique (npm run selftest)
-│   ├── simulate.js           # 35 tests d'intégration (npm run simulate)
+│   ├── selftest.js           # 72 tests de logique (npm run selftest)
+│   ├── simulate.js           # 44 tests d'intégration (npm run simulate)
+│   ├── test-postgres.js      # 41 tests SQL sur base émulée pg-mem (npm run test-pg)
 │   └── verify.js             # 103 vérifications statiques (npm run verify)
 ├── render.yaml               # Blueprint de déploiement Render en 2 clics
 ├── .env.example              # Modèle de configuration

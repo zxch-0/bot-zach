@@ -157,6 +157,37 @@ function check(name, condition) {
   const removeSome = await economy.adminAdjust(store, 'u5', -40);
   check('retrait partiel 100-40=60', removeSome.balance === 60 && removeSome.clamped === false);
 
+  console.log('\n━ ⚡ Concurrence (débits simultanés)');
+  await store.credit('u9', 1000);
+  const races = await Promise.all(Array.from({ length: 30 }, () => store.debit('u9', 100)));
+  check('30 débits concurrents : exactement 10 passent', races.filter((r) => r !== null).length === 10);
+  check('solde jamais négatif après la course', (await store.getUser('u9')).balance === 0);
+
+  console.log('\n━ 🃏 Intégrité du sabot');
+  const deck = blackjack.createDeck(1);
+  const uniques = new Set(deck.map((c) => c.rank + c.suit));
+  check('52 cartes toutes uniques', deck.length === 52 && uniques.size === 52);
+  const counts = {};
+  for (let i = 0; i < 5200; i++) {
+    const d = blackjack.createDeck(1);
+    const card = d[d.length - 1]; // carte piochée par pop()
+    counts[card.rank] = (counts[card.rank] || 0) + 1;
+  }
+  const seen = Object.values(counts);
+  check('mélange plausible (13 rangs, 150-650 sorties sur 5200)', seen.length === 13 && seen.every((v) => v > 150 && v < 650));
+
+  console.log('\n━ 🛒 Plafond de 25 produits (limite des menus Discord)');
+  const limStore = new JsonStore(path.join(os.tmpdir(), `zachservices-lim-${Date.now()}.json`));
+  await limStore.init();
+  for (let i = 0; i < 40; i++) {
+    await shopService.addProduct(limStore, { name: `Produit ${i}`, price: 10, description: '', emoji: '' });
+  }
+  check('boutique plafonnée à 25 produits (2 défauts + 23 ajouts)', (await limStore.listProducts()).length === 25);
+  const refused = await shopService.addProduct(limStore, { name: 'Trop', price: 10 });
+  check('ajout refusé au-delà du plafond', refused.ok === false && /pleine/.test(refused.error));
+  await limStore.close();
+  try { fs.unlinkSync(limStore.filePath); } catch {}
+
   await store.close();
   try { fs.unlinkSync(dbFile); } catch {}
 
