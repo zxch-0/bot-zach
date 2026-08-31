@@ -1,8 +1,8 @@
 // ============================================================
-// /produit — commande admin : gère la boutique.
-//   /produit ajouter nom prix [description] [emoji]
-//   /produit retirer produit   (avec autocomplétion)
-//   /produit liste
+// /product — commande admin : gère la boutique.
+//   /product add name price [description] [emoji]
+//   /product remove product   (avec autocomplétion)
+//   /product list
 // Mêmes droits que /give : ADMIN_USER_IDS, ADMIN_ROLE_ID ou
 // permission Discord "Administrateur".
 // ============================================================
@@ -15,20 +15,20 @@ const config = require('../config');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('produit')
-    .setDescription('(Admin) Gère les produits de la boutique')
+    .setName('product')
+    .setDescription('(Admin) Manage the shop products')
     .setContexts(InteractionContextType.Guild)
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand((sub) =>
       sub
-        .setName('ajouter')
-        .setDescription('Ajoute un produit à la boutique')
+        .setName('add')
+        .setDescription('Add a product to the shop')
         .addStringOption((option) =>
-          option.setName('nom').setDescription('Nom affiché dans la boutique').setRequired(true).setMaxLength(shopService.NAME_MAX)
+          option.setName('name').setDescription('Name displayed in the shop').setRequired(true).setMaxLength(shopService.NAME_MAX)
         )
         .addIntegerOption((option) =>
           option
-            .setName('prix')
+            .setName('price')
             .setDescription('Price in coins (1 to 10 000 000)')
             .setRequired(true)
             .setMinValue(1)
@@ -37,23 +37,23 @@ module.exports = {
         .addStringOption((option) =>
           option
             .setName('description')
-            .setDescription('Courte description affichée dans la boutique')
+            .setDescription('Short description displayed in the shop')
             .setRequired(false)
             .setMaxLength(shopService.DESCRIPTION_MAX)
         )
         .addStringOption((option) =>
-          option.setName('emoji').setDescription('Emoji du produit (ex : 🧰)').setRequired(false).setMaxLength(64)
+          option.setName('emoji').setDescription('Product emoji (e.g. 🧰)').setRequired(false).setMaxLength(64)
         )
     )
     .addSubcommand((sub) =>
       sub
-        .setName('retirer')
-        .setDescription('Retire un produit de la boutique')
+        .setName('remove')
+        .setDescription('Remove a product from the shop')
         .addStringOption((option) =>
-          option.setName('produit').setDescription('Le produit à retirer').setRequired(true).setAutocomplete(true)
+          option.setName('product').setDescription('The product to remove').setRequired(true).setAutocomplete(true)
         )
     )
-    .addSubcommand((sub) => sub.setName('liste').setDescription('Liste les produits de la boutique')),
+    .addSubcommand((sub) => sub.setName('list').setDescription('List the shop products')),
 
   async execute(interaction) {
     if (!isAdminInteraction(interaction)) {
@@ -66,11 +66,11 @@ module.exports = {
     const store = interaction.client.store;
     const sub = interaction.options.getSubcommand();
 
-    // --- /produit ajouter ---
-    if (sub === 'ajouter') {
+    // --- /product add ---
+    if (sub === 'add') {
       const result = await shopService.addProduct(store, {
-        name: interaction.options.getString('nom'),
-        price: interaction.options.getInteger('prix'),
+        name: interaction.options.getString('name'),
+        price: interaction.options.getInteger('price'),
         description: interaction.options.getString('description'),
         emoji: interaction.options.getString('emoji'),
         actorId: interaction.user.id,
@@ -92,9 +92,9 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // --- /produit retirer ---
-    if (sub === 'retirer') {
-      const productId = interaction.options.getString('produit');
+    // --- /product remove ---
+    if (sub === 'remove') {
+      const productId = interaction.options.getString('product');
       const result = await shopService.removeProduct(store, productId);
       if (!result.ok) {
         return interaction.reply({ embeds: [errorEmbed(result.error)], ephemeral: true });
@@ -107,12 +107,12 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // --- /produit liste ---
+    // --- /product list ---
     const products = await store.listProducts();
     if (!products.length) {
       const embed = baseEmbed(COLORS.warning)
         .setTitle('📦 Produits')
-        .setDescription('La boutique est vide. Ajoute des produits avec `/produit ajouter`.');
+        .setDescription('La boutique est vide. Ajoute des produits avec `/product add`.');
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -124,16 +124,16 @@ module.exports = {
       .setDescription(lines)
       .addFields({
         name: 'ℹ️ Gestion',
-        value: 'Ajouter : `/produit ajouter nom prix [description] [emoji]`\nRetirer : `/produit retirer produit`',
+        value: 'Ajouter : `/product add name price [description] [emoji]`\nRetirer : `/product remove product`',
       });
     return interaction.reply({ embeds: [embed], ephemeral: true });
   },
 
-  /** Autocomplétion de l'option "produit" de /produit retirer */
+  /** Autocomplétion de l'option "product" de /product remove */
   async autocomplete(interaction) {
     try {
       const focused = interaction.options.getFocused(true);
-      if (!focused || focused.name !== 'produit') return interaction.respond([]);
+      if (!focused || focused.name !== 'product') return interaction.respond([]);
       const store = interaction.client.store;
       const products = await store.listProducts();
       const query = String(focused.value || '').toLowerCase();
@@ -146,7 +146,7 @@ module.exports = {
         }));
       return interaction.respond(choices);
     } catch (err) {
-      console.error('[produit] Erreur d\'autocomplétion :', err.message);
+      console.error('[product] Erreur d\'autocomplétion :', err.message);
       try { await interaction.respond([]); } catch {}
     }
   },

@@ -12,7 +12,7 @@ const { baseEmbed, COLORS, errorEmbed } = require('../utils/embeds');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('import-invites')
-    .setDescription('(Admin) Importe les invitations existantes du serveur dans les compteurs')
+    .setDescription('(Admin) Import the server\'s existing invites into the counters')
     .setContexts(InteractionContextType.Guild)
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 

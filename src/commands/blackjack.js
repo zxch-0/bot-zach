@@ -1,5 +1,5 @@
 // ============================================================
-// /blackjack <mise> — blackjack interactif contre le croupier.
+// /blackjack <bet> — blackjack interactif contre le croupier.
 // Gain : mise ×2 • Blackjack naturel : ×2,5 • Égalité : remboursé.
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
@@ -12,8 +12,8 @@ module.exports = {
     .setContexts(InteractionContextType.Guild)
     .addIntegerOption((option) =>
       option
-        .setName('mise')
-        .setDescription('Le nombre de coins à miser')
+        .setName('bet')
+        .setDescription('The number of coins to bet')
         .setRequired(true)
         .setMinValue(1)
         .setMaxValue(1_000_000)
@@ -21,7 +21,7 @@ module.exports = {
 
   async execute(interaction) {
     if (interaction.user.bot) return;
-    const bet = interaction.options.getInteger('mise');
+    const bet = interaction.options.getInteger('bet');
     return blackjackGame.startBlackjack(interaction, bet);
   },
 };

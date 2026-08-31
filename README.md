@@ -24,7 +24,7 @@
    | 🧰 **Zach-checker** | 1 000 coins |
    | 💎 **Zach-checker Premium** | 5 000 coins |
 
-   …et **autant d'autres produits que vous voulez** : les admins en ajoutent à la volée avec `/produit ajouter` (25 max, stockés en base).
+   …et **autant d'autres produits que vous voulez** : les admins en ajoutent à la volée avec `/product add` (25 max, stockés en base).
 
    À l'achat, le bot demande le **pseudo Discord de livraison**, débite les coins puis **envoie un message privé à chaque admin** (vous) contenant : le pseudo de l'acheteur, le produit acheté, le prix et le pseudo de livraison — tout ce qu'il faut pour livrer la commande.
 
@@ -37,17 +37,17 @@
 | Commande | Description | Accès |
 |---|---|---|
 | `/daily` | Récupère **100 coins** (24 h de cooldown) — **1 invitation réussie requise** | Tous |
-| `/invitations [utilisateur]` | Affiche les invitations réussies d'un membre | Tous |
-| `/solde [utilisateur]` | Affiche le solde de coins | Tous |
-| `/classement` | Top 10 des plus grosses bourses | Tous |
-| `/blackjack mise` | Blackjack contre le croupier (boutons interactifs) | Tous |
-| `/rps mise choix` | Pierre-feuille-ciseaux contre le bot | Tous |
+| `/invites [user]` | Affiche les invitations réussies d'un membre | Tous |
+| `/balance [user]` | Affiche le solde de coins | Tous |
+| `/leaderboard` | Top 10 des plus grosses bourses | Tous |
+| `/blackjack bet` | Blackjack contre le croupier (boutons interactifs) | Tous |
+| `/rps bet choice` | Pierre-feuille-ciseaux contre le bot | Tous |
 | `/shop` | Boutique — achat de produits avec livraison | Tous |
-| `/aide` | Rappel des commandes et des règles | Tous |
-| `/give utilisateur montant` | Ajoute/retire des coins (négatif = retrait, plafonné à 0) | **Admins** |
-| `/produit ajouter nom prix [description] [emoji]` | Ajoute un produit à la boutique | **Admins** |
-| `/produit retirer produit` | Retire un produit (avec autocomplétion) | **Admins** |
-| `/produit liste` | Liste les produits et leurs identifiants | **Admins** |
+| `/help` | Rappel des commandes et des règles | Tous |
+| `/give user amount` | Ajoute/retire des coins (négatif = retrait, plafonné à 0) | **Admins** |
+| `/product add name price [description] [emoji]` | Ajoute un produit à la boutique | **Admins** |
+| `/product remove product` | Retire un produit (avec autocomplétion) | **Admins** |
+| `/product list` | Liste les produits et leurs identifiants | **Admins** |
 | `/import-invites` | Importe les invitations existantes du serveur | **Gérer le serveur** |
 
 ### 🛠️ Qui est « admin du bot » ? (configuration facile)
@@ -59,20 +59,20 @@ Une personne est **admin du bot** si **au moins une** de ces conditions est vrai
 3. Elle a la permission Discord **« Administrateur »** sur le serveur (fonctionne sans aucune config).
 
 ```env
-# Exemple : deux admins qui reçoivent les MP et peuvent utiliser /give et /produit
+# Exemple : deux admins qui reçoivent les MP et peuvent utiliser /give et /product
 ADMIN_USER_IDS=111111111111111111,222222222222222222
 # Exemple : tous les membres du rôle "Staff Zach" sont admins du bot
 ADMIN_ROLE_ID=333333333333333333
 ```
 
-> 💡 Les commandes `/give` et `/produit` ne sont **visibles et utilisables** que par ces admins. Un retrait via `/give` est **plafonné au solde** du membre (impossible de passer en négatif).
+> 💡 Les commandes `/give` et `/product` ne sont **visibles et utilisables** que par ces admins. Un retrait via `/give` est **plafonné au solde** du membre (impossible de passer en négatif).
 
 ### 📦 Boutique dynamique
 
 La boutique n'est plus figée dans le code : les produits vivent **en base de données**.
 
 - Au premier démarrage, les 2 produits par défaut sont créés (🧰 Zach-checker — 1 000 🪙, 💎 Zach-checker Premium — 5 000 🪙) ;
-- Ajoutez autant de produits que vous voulez avec `/produit ajouter` (jusqu'à **25**, limite des menus Discord) ;
+- Ajoutez autant de produits que vous voulez avec `/product add` (jusqu'à **25**, limite des menus Discord) ;
 - Le nom est automatiquement converti en identifiant interne (`Checker Doré` → `checker-dore`) ;
 - L'emoji est vérifié (emoji invalide → 📦 par défaut) pour ne jamais casser l'interface ;
 - Les achats déjà passés restent enregistrés même si le produit est retiré.
@@ -179,7 +179,7 @@ Toutes les variables :
 |---|---|---|
 | `DISCORD_TOKEN` | ✅ | Le token du bot |
 | `CLIENT_ID` | ✅ | L'ID de l'application |
-| `ADMIN_USER_IDS` | ✅* | IDs des admins (MP d'achat + `/give` + `/produit`), séparés par des virgules |
+| `ADMIN_USER_IDS` | ✅* | IDs des admins (MP d'achat + `/give` + `/product`), séparés par des virgules |
 | `ADMIN_USER_ID` | — | Compatibilité ancienne version (un seul ID) |
 | `ADMIN_ROLE_ID` | — | Rôle Discord dont les membres sont admins du bot |
 | `GUILD_ID` | — | ID d'un serveur de test pour des commandes **instantanées** (dev uniquement) |
@@ -213,11 +213,11 @@ Vous devez voir :
 
 ### 7. Tester le bot
 
-- Dans Discord, tapez `/aide` → le bot présente tout.
-- `/solde` → 0 coins. `/daily` → verrouillé (explique comment inviter).
+- Dans Discord, tapez `/help` → le bot présente tout.
+- `/balance` → 0 coins. `/daily` → verrouillé (explique comment inviter).
 - Invitez un ami avec **votre** lien d'invitation (salon → icône ➕ *Inviter des personnes* → *Modifier les paramètres du lien* → réglez pour que **le lien ne expire jamais** pour faciliter le suivi).
-- L'ami rejoint → `/invitations` → **1 invitation** → `/daily` → **+100 coins** 🎉
-- `/blackjack 50`, `/rps 50 pierre` → jouez !
+- L'ami rejoint → `/invites` → **1 invitation** → `/daily` → **+100 coins** 🎉
+- `/blackjack 50`, `/rps 50 rock` → jouez !
 - `/shop` → achetez quand vous avez assez de coins → **vous recevez un MP** avec l'acheteur, le produit et le pseudo de livraison.
 - Admin : `/give @membre 10000` pour créditer des coins de test.
 
@@ -356,7 +356,7 @@ Le stockage reste le fichier local `data/zach.json` (persistant, aucune configur
 
 | Quoi | Où |
 |---|---|
-| **Produits de la boutique** | **en jeu** avec `/produit ajouter|retirer|liste` (admins) — plus besoin de toucher au code |
+| **Produits de la boutique** | **en jeu** avec `/product add|remove|list` (admins) — plus besoin de toucher au code |
 | Produits par défaut (premier lancement) | tableau `defaultProducts` dans `src/config.js` |
 | Récompense du daily / cooldown | variables `DAILY_REWARD` et `DAILY_COOLDOWN_HOURS` du `.env` |
 | Mise maximale du casino | `.setMaxValue(...)` dans `src/commands/blackjack.js` et `src/commands/rps.js` |
@@ -394,7 +394,7 @@ npm run typecheck  # 5. Typage : TypeScript en mode vérification sur tout le co
 | `Impossible de démarrer … PostgreSQL` | Vérifiez `DATABASE_URL` (hôte, mot de passe, `?sslmode=require`) et `DATABASE_DRIVER=postgres`. Le message d'erreur précise la cause (authentification, hôte, SSL…). |
 | Le bot affiche `Port déjà utilisé` | Deux instances tournent avec le même `PORT`, ou le port est pris — le bot continue de fonctionner sans serveur web (Render exige le sien). |
 | Les commandes `/...` n'apparaissent pas | Patientez jusqu'à 1 h (propagation globale) ; sinon définissez `GUILD_ID` pour un effet immédiat sur ce serveur ; vérifiez que le lien d'invitation contient `scope=bot applications.commands`. |
-| Les commandes `/give` et `/produit` n'apparaissent pas | Elles sont masquées : seuls les admins (voir section 🛠️) les voient. Ajoutez votre ID dans `ADMIN_USER_IDS` ou utilisez la permission Discord « Administrateur ». |
+| Les commandes `/give` et `/product` n'apparaissent pas | Elles sont masquées : seuls les admins (voir section 🛠️) les voient. Ajoutez votre ID dans `ADMIN_USER_IDS` ou utilisez la permission Discord « Administrateur ». |
 | Les invitations ne comptent pas | 1) Le bot doit avoir la permission **Gérer le serveur** (relancez l'URL d'invitation de l'étape 3). 2) *Server Members Intent* activé. 3) Le membre a-t-il utilisé un lien **vanity** ou rejoint pendant que le bot était hors ligne ? 4) Utilisez `/import-invites` pour créditer les anciennes invitations. |
 | Je ne reçois pas les MP d'achat | Vérifiez `ADMIN_USER_IDS` (ou la variable Render) ; le bot doit partager un serveur avec vous ; vérifiez que vous n'avez pas bloqué le bot. Un salon `PURCHASE_LOG_CHANNEL_ID` peut servir de secours. |
 | Les coins disparaissent après un redéploiement Render | Vous utilisez le stockage `json` sur un disque éphémère. Passez à `DATABASE_DRIVER=postgres` + `DATABASE_URL` Neon (solution A). |
@@ -428,8 +428,8 @@ bot-zach/
 │   │   └── rps.js            # Pierre-feuille-ciseaux (logique pure)
 │   ├── flows/
 │   │   └── shopFlow.js       # Menu /shop → modale pseudo → validation achat
-│   ├── commands/             # 11 commandes (daily, solde, classement, invitations,
-│   │                         # blackjack, rps, shop, aide, give, produit, import-invites)
+│   ├── commands/             # 11 commandes (daily, balance, leaderboard, invites,
+│   │                         # blackjack, rps, shop, help, give, product, import-invites)
 │   ├── events/               # ready, guildMemberAdd/Remove, inviteCreate/Delete,
 │   │                         # guildCreate, interactionCreate (+ autocomplétion)
 │   └── utils/                # Embeds, formatage, droits d'administration

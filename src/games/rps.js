@@ -5,9 +5,9 @@
 // ============================================================
 
 const CHOICES = {
-  pierre: { emoji: '🪨', beats: 'ciseaux' },
-  feuille: { emoji: '📄', beats: 'pierre' },
-  ciseaux: { emoji: '✂️', beats: 'feuille' },
+  rock: { emoji: '🪨', beats: 'scissors', label: 'Pierre' },
+  paper: { emoji: '📄', beats: 'rock', label: 'Feuille' },
+  scissors: { emoji: '✂️', beats: 'paper', label: 'Ciseaux' },
 };
 
 const CHOICE_KEYS = Object.keys(CHOICES);

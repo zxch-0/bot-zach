@@ -62,7 +62,7 @@ for (const file of listFiles(path.join(ROOT, 'src/commands'))) {
   check(`commande /${cmd.data?.name} (depuis ${file})`, Boolean(cmd.data && typeof cmd.execute === 'function'));
   commands.set(cmd.data.name, { cmd, file });
 }
-const expectedCommands = ['aide', 'blackjack', 'classement', 'daily', 'give', 'import-invites', 'invitations', 'produit', 'rps', 'shop', 'solde'];
+const expectedCommands = ['balance', 'blackjack', 'daily', 'give', 'help', 'import-invites', 'invites', 'leaderboard', 'product', 'rps', 'shop'];
 for (const name of expectedCommands) check(`commande attendue /${name} présente`, commands.has(name));
 
 for (const file of listFiles(path.join(ROOT, 'src/events'))) {
@@ -97,11 +97,11 @@ for (const [name, { cmd, file }] of commands) {
       }
     }
   }
-  // Sous-commandes de /produit
-  if (name === 'produit') {
+  // Sous-commandes de /product
+  if (name === 'product') {
     const subs = options.filter((o) => o.type === 1).map((o) => o.name);
-    check('/produit : sous-commandes ajouter/retirer/liste', ['ajouter', 'retirer', 'liste'].every((s) => subs.includes(s)));
-    check('/produit retirer : autocomplétion activée', options.some((o) => o.name === 'retirer' && o.options?.some((x) => x.name === 'produit' && x.autocomplete === true)));
+    check('/product : sous-commandes add/remove/list', ['add', 'remove', 'list'].every((s) => subs.includes(s)));
+    check('/product remove : autocomplétion activée', options.some((o) => o.name === 'remove' && o.options?.some((x) => x.name === 'product' && x.autocomplete === true)));
   }
 }
 

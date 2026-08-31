@@ -12,7 +12,7 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      // --- Autocomplétion (ex : /produit retirer) ---
+      // --- Autocomplétion (ex : /product remove) ---
       if (interaction.isAutocomplete()) {
         const command = interaction.client.commands.get(interaction.commandName);
         if (command && typeof command.autocomplete === 'function') {

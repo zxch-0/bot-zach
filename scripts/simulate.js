@@ -2,7 +2,7 @@
 // ZachServices — Simulation d'intégration (sans Discord)
 // Exécute les VRAIES commandes et les VRAIS flux avec de fausses
 // interactions Discord : /daily, /shop, achat complet (modale +
-// MP admin), /produit, /give, /blackjack et /rps.
+// MP admin), /product, /give, /blackjack et /rps.
 // Lancer : npm run simulate
 // ============================================================
 const path = require('path');
@@ -16,14 +16,14 @@ const config = require('../src/config');
 config.adminUserIds.push('999000999000999000', '999000999000999001');
 
 const daily = require('../src/commands/daily');
-const solde = require('../src/commands/solde');
+const balance = require('../src/commands/balance');
 const shop = require('../src/commands/shop');
 const give = require('../src/commands/give');
-const produit = require('../src/commands/produit');
+const product = require('../src/commands/product');
 const rps = require('../src/commands/rps');
-const aide = require('../src/commands/aide');
-const classement = require('../src/commands/classement');
-const invitationsCmd = require('../src/commands/invitations');
+const help = require('../src/commands/help');
+const leaderboard = require('../src/commands/leaderboard');
+const invitesCmd = require('../src/commands/invites');
 const shopFlow = require('../src/flows/shopFlow');
 const blackjackGame = require('../src/games/blackjackGame');
 
@@ -111,29 +111,29 @@ async function main() {
   await store.recordJoin('100000000000000002', joueur.id);
   it = makeCommandInteraction({ client, user: joueur });
   await daily.execute(it);
-  check('accepté avec 1 invitation (+100)', /daily récupéré/i.test(embedText(it.replies[0])));
+  check('accepté avec 1 invitation (+100)', /daily claimed/i.test(embedText(it.replies[0])));
   check('solde = 100 après daily', (await store.getUser(joueur.id)).balance === 100);
 
   it = makeCommandInteraction({ client, user: joueur });
   await daily.execute(it);
-  check('cooldown immédiat', /déjà récupéré/i.test(embedText(it.replies[0])));
+  check('cooldown immédiat', /already claimed/i.test(embedText(it.replies[0])));
 
-  console.log('\n━ 💰 /solde, /classement, /invitations, /aide');
+  console.log('\n━ 💰 /balance, /leaderboard, /invites, /help');
   it = makeCommandInteraction({ client, user: joueur, options: { getUser: () => joueur } });
-  await solde.execute(it);
-  check('/solde affiche 100 coins', /100/.test(embedText(it.replies[0])));
+  await balance.execute(it);
+  check('/balance affiche 100 coins', /100/.test(embedText(it.replies[0])));
 
   it = makeCommandInteraction({ client, user: joueur });
-  await classement.execute(it);
-  check('/classement liste le joueur', /joueur|100/.test(embedText(it.replies[0])));
+  await leaderboard.execute(it);
+  check('/leaderboard liste le joueur', /joueur|100/.test(embedText(it.replies[0])));
 
   it = makeCommandInteraction({ client, user: joueur, options: { getUser: () => joueur } });
-  await invitationsCmd.execute(it);
-  check('/invitations affiche 1 invitation', /1.*invitation/i.test(embedText(it.replies[0])));
+  await invitesCmd.execute(it);
+  check('/invites affiche 1 invitation', /1.*invitation/i.test(embedText(it.replies[0])));
 
   it = makeCommandInteraction({ client, user: joueur });
-  await aide.execute(it);
-  check('/aide se construit sans erreur', it.replies.length === 1);
+  await help.execute(it);
+  check('/help se construit sans erreur', it.replies.length === 1);
 
   console.log('\n━ 🛠️  /give (admin)');
   it = makeCommandInteraction({ client, user: joueur, options: { getUser: () => joueur, getInteger: () => 5000 } });
@@ -142,59 +142,59 @@ async function main() {
 
   it = makeCommandInteraction({ client, user: admin, options: { getUser: () => joueur, getInteger: () => 5000 } });
   await give.execute(it);
-  check('/give admin crédite 5000 (total 5100)', /5 100/.test(embedText(it.replies[0]).replace(/\u202f/g, ' ')));
+  check('/give admin crédite 5000 (total 5100)', /5,100/.test(embedText(it.replies[0])));
 
   it = makeCommandInteraction({ client, user: admin, options: { getUser: () => joueur, getInteger: () => -999999 } });
   await give.execute(it);
   check('/give retrait plafonné (solde 0)', /0\s*🪙|plafonné/i.test(embedText(it.replies[0]).replace(/\u202f/g, ' ')));
   await store.credit(joueur.id, 5100); // restaure pour la suite
 
-  console.log('\n━ 📦 /produit (admin, boutique dynamique)');
+  console.log('\n━ 📦 /product (admin, boutique dynamique)');
   it = makeCommandInteraction({
     client,
     user: joueur,
-    options: { getSubcommand: () => 'liste' },
+    options: { getSubcommand: () => 'list' },
   });
-  await produit.execute(it);
-  check('/produit refusé pour un non-admin', /réservée/i.test(embedText(it.replies[0])));
+  await product.execute(it);
+  check('/product refusé pour un non-admin', /réservée/i.test(embedText(it.replies[0])));
 
   it = makeCommandInteraction({
     client,
     user: admin,
     options: {
-      getSubcommand: () => 'ajouter',
-      getString: (name) => ({ nom: 'Checker Doré', description: 'Édition limitée', emoji: '🏆' }[name] ?? null),
+      getSubcommand: () => 'add',
+      getString: (name) => ({ name: 'Checker Doré', description: 'Édition limitée', emoji: '🏆' }[name] ?? null),
       getInteger: () => 2500,
     },
   });
-  await produit.execute(it);
+  await product.execute(it);
   const productsAfterAdd = await store.listProducts();
-  check('produit ajouté via /produit ajouter', productsAfterAdd.some((p) => p.id === 'checker-dore'));
+  check('produit ajouté via /product add', productsAfterAdd.some((p) => p.id === 'checker-dore'));
 
   it = makeCommandInteraction({
     client,
     user: admin,
-    options: { getSubcommand: () => 'retirer', getString: () => 'checker-dore' },
+    options: { getSubcommand: () => 'remove', getString: () => 'checker-dore' },
   });
-  await produit.execute(it);
-  check('produit retiré via /produit retirer', !(await store.listProducts()).some((p) => p.id === 'checker-dore'));
+  await product.execute(it);
+  check('produit retiré via /product remove', !(await store.listProducts()).some((p) => p.id === 'checker-dore'));
 
-  it = makeCommandInteraction({ client, user: admin, options: { getSubcommand: () => 'liste' } });
-  await produit.execute(it);
-  check('/produit liste fonctionne', it.replies.length === 1);
+  it = makeCommandInteraction({ client, user: admin, options: { getSubcommand: () => 'list' } });
+  await product.execute(it);
+  check('/product list fonctionne', it.replies.length === 1);
 
   // Autocomplétion
   const autoIt = {
     client,
     user: admin,
-    options: { getFocused: () => ({ name: 'produit', value: 'zach' }) },
+    options: { getFocused: () => ({ name: 'product', value: 'zach' }) },
     responded: false,
     async respond(choices) {
       this.responded = true;
       this.choices = choices;
     },
   };
-  await produit.autocomplete(autoIt);
+  await product.autocomplete(autoIt);
   check('autocomplétion propose les produits', autoIt.responded && autoIt.choices.length >= 2 && autoIt.choices[0].value === 'zach-checker');
 
   console.log('\n━ 🛒 /shop + achat complet (modale → débit → MP admin)');
@@ -438,7 +438,7 @@ async function main() {
   const rpsIt = makeCommandInteraction({
     client,
     user: joueur,
-    options: { getInteger: () => 50, getString: () => 'pierre' },
+    options: { getInteger: () => 50, getString: () => 'rock' },
   });
   await rps.execute(rpsIt);
   check('/rps se joue et affiche le résultat', /Pierre|Égalité|bot gagne/i.test(embedText(rpsIt.replies[0])));

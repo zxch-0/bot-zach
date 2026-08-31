@@ -41,7 +41,7 @@ class Store {
   /** @returns {Promise<any>} -> id */
   async addPurchase(purchase) {}
 
-  /* --- Produits de la boutique (gérés via /produit) --- */
+  /* --- Produits de la boutique (gérés via /product) --- */
   /** @returns {Promise<any>} -> [{ id, name, emoji, price, description }] */
   async listProducts() {}
   /** @returns {Promise<any>} -> produit ou null */

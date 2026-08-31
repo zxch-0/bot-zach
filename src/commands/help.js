@@ -1,5 +1,5 @@
 // ============================================================
-// /aide — overview of all commands and rules
+// /help — overview of all commands and rules
 // ============================================================
 const { SlashCommandBuilder } = require('discord.js');
 const config = require('../config');
@@ -8,7 +8,7 @@ const { fmtCoins } = require('../utils/format');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('aide')
+    .setName('help')
     .setDescription('Present ZachServices: commands, rules, and shop'),
 
   async execute(interaction) {
@@ -27,7 +27,7 @@ module.exports = {
         {
           name: '🎟️ Invites & /daily',
           value:
-            '• `/invitations` — view your successful invites\n' +
+            '• `/invites` — view your successful invites\n' +
             '• `/daily` — **' +
             fmtCoins(config.dailyReward) +
             ' every 24 h, unlocked after 1 successful invite\n' +
@@ -43,9 +43,9 @@ module.exports = {
           name: '🛒 Shop & misc',
           value:
             '• `/shop` — buy products with your coins (delivery via DM after purchase)\n' +
-            '• `/solde [user]` — your coin balance\n' +
-            '• `/ranking` — top 10 richest\n' +
-            '• `/invitations` — track your invites',
+            '• `/balance [user]` — your coin balance\n' +
+            '• `/leaderboard` — top 10 richest\n' +
+            '• `/invites` — track your invites',
         },
         {
           name: '📦 Items for sale',
@@ -61,7 +61,7 @@ module.exports = {
             '• `/product add|remove|list` — manage the shop',
         }
       )
-      .setFooter({ text: 'ZachServices • /aide' });
+      .setFooter({ text: 'ZachServices • /help' });
 
     return interaction.reply({ embeds: [embed] });
   },

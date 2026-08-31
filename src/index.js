@@ -36,7 +36,7 @@ if (!config.adminUserIds.length) {
   console.warn(
     '⚠️  ADMIN_USER_ID / ADMIN_USER_IDS n\'est pas défini : personne ne recevra les MP ' +
       'd\'achat de la boutique. Les membres avec la permission Discord "Administrateur" ' +
-      'pourront quand même utiliser /give et /produit.'
+      'pourront quand même utiliser /give et /product.'
   );
 }
 

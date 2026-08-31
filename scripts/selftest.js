@@ -96,11 +96,11 @@ function check(name, condition) {
   check('18 vs 18 = push', blackjack.compareHands([C('10'), C('8')], [C('9'), C('9')]) === 'push');
 
   console.log('\n━ ✂️  Pierre-feuille-ciseaux');
-  check('pierre bat ciseaux', rps.resolveRps('pierre', 'ciseaux') === 'win');
-  check('ciseaux battent feuille', rps.resolveRps('ciseaux', 'feuille') === 'win');
-  check('feuille bat pierre', rps.resolveRps('feuille', 'pierre') === 'win');
-  check('pierre vs pierre = tie', rps.resolveRps('pierre', 'pierre') === 'tie');
-  check('pierre vs feuille = lose', rps.resolveRps('pierre', 'feuille') === 'lose');
+  check('pierre bat ciseaux', rps.resolveRps('rock', 'scissors') === 'win');
+  check('ciseaux battent feuille', rps.resolveRps('scissors', 'paper') === 'win');
+  check('feuille bat pierre', rps.resolveRps('paper', 'rock') === 'win');
+  check('pierre vs pierre = tie', rps.resolveRps('rock', 'rock') === 'tie');
+  check('pierre vs feuille = lose', rps.resolveRps('rock', 'paper') === 'lose');
   check('victoire payée 2x', rps.payoutFor('win', 100) === 200);
   check('égalité remboursée', rps.payoutFor('tie', 100) === 100);
   const picks = new Set(Array.from({ length: 200 }, () => rps.botPick()));
@@ -120,7 +120,7 @@ function check(name, condition) {
   check('achat accepté si solde suffisant', purchase.ok === true);
   check('coins débités du bon montant', (await store.getUser(buyer.id)).balance === before - product.price);
 
-  console.log('\n━ 🛠️  /produit (gestion dynamique)');
+  console.log('\n━ 🛠️  /product (gestion dynamique)');
   const added = await shopService.addProduct(store, { name: 'Checker Doré', price: 2500, description: 'Édition dorée', emoji: '🏆', actorId: 'admin1' });
   check('ajout produit (slug sans accents)', added.ok === true && added.product.id === 'checker-dore');
   const duplicate = await shopService.addProduct(store, { name: 'Checker Doré', price: 100, description: '', emoji: '' });

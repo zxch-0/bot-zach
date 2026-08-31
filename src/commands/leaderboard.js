@@ -1,5 +1,5 @@
 // ============================================================
-// /classement — server leaderboard of richest users
+// /leaderboard — server leaderboard of richest users
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const economy = require('../services/economy');
@@ -10,7 +10,7 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('classement')
+    .setName('leaderboard')
     .setDescription('Show top 10 richest users\' coin balances')
     .setContexts(InteractionContextType.Guild),
 

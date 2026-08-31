@@ -1,7 +1,7 @@
 // ============================================================
 // ZachServices — Boutique & livraison (produits dynamiques)
 // Les produits sont stockés en base et gérés par les admins via
-// /produit ajouter|retirer|liste. À l'achat :
+// /product add|remove|list. À l'achat :
 //   1. le bot vérifie le solde,
 //   2. un formulaire demande le pseudo Discord de livraison,
 //   3. les coins sont débités (atomiquement),
@@ -44,11 +44,11 @@ function slugify(name) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 32)
     .replace(/-+$/g, '');
-  return slug || 'produit';
+  return slug || 'product';
 }
 
 /**
- * Valide et crée un produit (commande /produit ajouter).
+ * Valide et crée un produit (commande /product add).
  * Retourne { ok: true, product } ou { ok: false, error }.
  */
 async function addProduct(store, { name, price, description, emoji, actorId }) {
@@ -98,7 +98,7 @@ async function addProduct(store, { name, price, description, emoji, actorId }) {
 async function removeProduct(store, productId) {
   const product = await store.getProductById(productId);
   if (!product) {
-    return { ok: false, error: `Produit \`${productId}\` introuvable. Utilise \`/produit liste\` pour voir les IDs.` };
+    return { ok: false, error: `Produit \`${productId}\` introuvable. Utilise \`/product list\` pour voir les IDs.` };
   }
   await store.removeProduct(productId);
   return { ok: true, product };
