@@ -7,7 +7,7 @@ const CURRENCY = require('../config').currency;
 /** Formate un montant : 1234567 -> "1 234 567 🪙" */
 function fmtCoins(amount) {
   const n = Number(amount || 0);
-  return `${n.toLocaleString('fr-FR')} ${CURRENCY}`;
+  return `${n.toLocaleString('en-US')} ${CURRENCY}`;
 }
 
 /** Formate une durée en "X j HH h MM min SS s" (parties nulles masquées) */
@@ -23,14 +23,14 @@ function fmtTimeLeft(ms) {
   if (hours > 0) parts.push(`${hours} h`);
   if (minutes > 0 && days === 0) parts.push(`${minutes} min`);
   if (days === 0 && hours === 0) parts.push(`${seconds} s`);
-  return parts.join(' ') || 'quelques secondes';
+  return parts.join(' ') || 'a few seconds';
 }
 
 /** Date locale lisible : "30/08/2026 à 14:32" */
 function fmtDate(ts) {
   const d = new Date(ts);
   const pad = (x) => String(x).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} à ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${d.getFullYear()} at ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** Discord timestamp relatif (<t:...:R>) — s'affiche "dans 23 heures" dans Discord */

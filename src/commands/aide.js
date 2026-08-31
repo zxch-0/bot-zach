@@ -1,5 +1,5 @@
 // ============================================================
-// /aide — présentation de toutes les commandes et règles
+// /aide — overview of all commands and rules
 // ============================================================
 const { SlashCommandBuilder } = require('discord.js');
 const config = require('../config');
@@ -9,10 +9,10 @@ const { fmtCoins } = require('../utils/format');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('aide')
-    .setDescription('Présente ZachServices : commandes, règles et boutique'),
+    .setDescription('Present ZachServices: commands, rules, and shop'),
 
   async execute(interaction) {
-    // Produits réels de la boutique (pas la liste statique de config)
+    // Real shop items (not static config list)
     let products = [];
     try {
       products = await interaction.client.store.listProducts();
@@ -21,45 +21,44 @@ module.exports = {
     }
 
     const embed = baseEmbed(COLORS.primary)
-      .setTitle('👑 ZachServices — Aide')
-      .setDescription(
-        'Bienvenue sur **ZachServices** ! Gagne des coins, joue au casino et dépense-les dans la boutique.'
-      )
+      .setTitle('👑 ZachServices — Help')
+      .setDescription('Welcome to ZachServices ! Earn coins, play casino, and spend them in the shop.')
       .addFields(
         {
-          name: '🎟️ Invitations & /daily',
+          name: '🎟️ Invites & /daily',
           value:
-            `• \`/invitations\` — vois tes invitations réussies\n` +
-            `• \`/daily\` — **${fmtCoins(config.dailyReward)}** toutes les 24 h, débloqué après **1 invitation réussie** ` +
-            '(un membre rejoint via ton lien et reste sur le serveur)',
+            '• `/invitations` — view your successful invites\n' +
+            '• `/daily` — **' +
+            fmtCoins(config.dailyReward) +
+            ' every 24 h, unlocked after 1 successful invite\n' +
+            '(a member joins via your link and stays on the server)',
         },
         {
           name: '🎰 Casino',
           value:
-            '• `/blackjack mise` — contre le croupier : **gain ×2**, blackjack naturel **×2,5**, égalité remboursée\n' +
-            '• `/rps mise choix` — pierre-feuille-ciseaux contre le bot : **gain ×2**, égalité remboursée',
+            '• `/blackjack bet` — against the dealer: **win ×2**, natural blackjack **×2.5**, tie refunded\n' +
+            '• `/rps bet choice` — rock-paper-scissors against the bot: **win ×2**, tie refunded',
         },
         {
-          name: '🛒 Boutique & divers',
+          name: '🛒 Shop & misc',
           value:
-            '• `/shop` — achète des produits avec tes coins (livraison par MP après achat)\n' +
-            '• `/solde [utilisateur]` — ton solde de coins\n' +
-            '• `/classement` — top 10 des bourses\n' +
-            '• `/invitations` — suis tes invitations',
+            '• `/shop` — buy products with your coins (delivery via DM after purchase)\n' +
+            '• `/solde [user]` — your coin balance\n' +
+            '• `/ranking` — top 10 richest\n' +
+            '• `/invitations` — track your invites',
         },
         {
-          name: '📦 Produits en vente',
+          name: '📦 Items for sale',
           value:
-            (products.length
+            products.length
               ? products.map((p) => `${p.emoji} **${p.name}** — ${fmtCoins(p.price)}`).join('\n')
-              : 'Boutique vide pour le moment') +
-            '\n_(liste complète et à jour dans `/shop`)_',
+              : 'Shop is empty for now\n_(full and up-to-date list in `/shop`)_',
         },
         {
-          name: '🛠️ Commandes admin',
+          name: '🛠️ Admin commands',
           value:
-            '• `/give utilisateur montant` — ajoute/retire des coins\n' +
-            '• `/produit ajouter|retirer|liste` — gère la boutique',
+            '• `/give user amount` — add/remove coins\n' +
+            '• `/product add|remove|list` — manage the shop',
         }
       )
       .setFooter({ text: 'ZachServices • /aide' });

@@ -1,5 +1,5 @@
 // ============================================================
-// /classement — top 10 des bourses du serveur
+// /classement — server leaderboard of richest users
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const economy = require('../services/economy');
@@ -11,7 +11,7 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('classement')
-    .setDescription('Affiche le top 10 des plus grosses bourses de coins')
+    .setDescription('Show top 10 richest users\' coin balances')
     .setContexts(InteractionContextType.Guild),
 
   async execute(interaction) {
@@ -20,18 +20,18 @@ module.exports = {
 
     if (!top.length) {
       const embed = baseEmbed(COLORS.warning)
-        .setTitle('🏆 Classement')
-        .setDescription('Personne n\'a encore de coins… Sois le premier à récupérer ton `/daily` !');
+        .setTitle('🏆 Leaderboard')
+        .setDescription('No one has coins yet... Be the first to claim your `/daily` !');
       return interaction.reply({ embeds: [embed] });
     }
 
     const lines = top.map((entry, i) => {
       const medal = MEDALS[i] || `**${i + 1}.**`;
-      return `${medal} <@${entry.userId}> — **${fmtCoins(entry.balance)}**`;
+      return `${medal} <@${entry.userId}> — ${fmtCoins(entry.balance)}`;
     });
 
     const embed = baseEmbed(COLORS.warning)
-      .setTitle('🏆 Classement des bourses')
+      .setTitle('🏆 Leaderboard')
       .setDescription(lines.join('\n'));
     return interaction.reply({ embeds: [embed] });
   },

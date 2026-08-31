@@ -29,7 +29,7 @@ module.exports = {
         .addIntegerOption((option) =>
           option
             .setName('prix')
-            .setDescription('Prix en coins (1 à 10 000 000)')
+            .setDescription('Price in coins (1 to 10 000 000)')
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(10_000_000)
@@ -82,7 +82,7 @@ module.exports = {
 
       const p = result.product;
       const embed = baseEmbed(COLORS.success)
-        .setTitle('✅ Produit ajouté à la boutique')
+        .setTitle('✅ Product added to shop')
         .setDescription(`${p.emoji} **${p.name}** est maintenant en vente dans \`/shop\` !`)
         .addFields(
           { name: '🏷️ Prix', value: fmtCoins(p.price), inline: true },
@@ -102,7 +102,7 @@ module.exports = {
       const p = result.product;
       const embed = baseEmbed(COLORS.success)
         .setTitle('🗑️ Produit retiré')
-        .setDescription(`${p.emoji} **${p.name}** (\`${p.id}\`) n'est plus en vente.\nLes commandes déjà passées restent enregistrées.`)
+        .setDescription(`${p.emoji} **${p.name}** (\`${p.id}\`) n't on sale anymore.\nLes commandes déjà passées restent enregistrées.`)
         .setFooter({ text: `ZachServices • ${fmtCoins(p.price)}` });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
