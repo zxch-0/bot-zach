@@ -20,7 +20,7 @@ module.exports = {
 
     client.user.setPresence({
       status: 'online',
-      activities: [{ name: 'au casino • /aide', type: ActivityType.Playing }],
+      activities: [{ name: 'au casino • /help', type: ActivityType.Playing }],
     });
 
     // --- Enregistrement des commandes slash ---

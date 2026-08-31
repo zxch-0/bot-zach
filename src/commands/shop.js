@@ -1,6 +1,6 @@
 // ============================================================
 // /shop — boutique ZachServices (produits gérés par les admins
-// via /produit ajouter|retirer|liste). À l'achat, un formulaire
+// via /product add|remove|list). À l'achat, un formulaire
 // demande le pseudo Discord de livraison, puis les admins
 // reçoivent un MP pour livrer la commande.
 // ============================================================
@@ -11,7 +11,7 @@ const { baseEmbed, COLORS } = require('../utils/embeds');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('shop')
-    .setDescription('Parcoure la boutique et achète des produits avec tes coins')
+    .setDescription('Browse the shop and buy products with your coins')
     .setContexts(InteractionContextType.Guild),
 
   async execute(interaction) {
@@ -23,7 +23,7 @@ module.exports = {
         .setTitle('🛒 Boutique ZachServices')
         .setDescription(
           'La boutique est vide pour le moment ! 📭\n' +
-            'Un administrateur peut ajouter des produits avec `/produit ajouter`.'
+            'Un administrateur peut ajouter des produits avec `/product add`.'
         );
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }

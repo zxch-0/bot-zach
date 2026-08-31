@@ -43,7 +43,7 @@ const config = {
   token: process.env.DISCORD_TOKEN || '',
   clientId: process.env.CLIENT_ID || '',
   guildId: process.env.GUILD_ID || '',
-  adminUserIds, // tous les admins (reçoivent les MP d'achat, accès /give et /produit)
+  adminUserIds, // tous les admins (reçoivent les MP d'achat, accès /give et /product)
   adminUserId: adminUserIds[0] || process.env.ADMIN_USER_ID || '', // compat ancien code
   adminRoleId: process.env.ADMIN_ROLE_ID || '', // rôle Discord admin du bot (optionnel)
   purchaseChannelId: process.env.PURCHASE_LOG_CHANNEL_ID || '',
@@ -60,7 +60,7 @@ const config = {
 
   // --- Boutique ---
   // Produits par défaut, créés automatiquement au premier démarrage.
-  // Ensuite, gérez la boutique en jeu avec /produit ajouter|retirer|liste (admins).
+  // Ensuite, gérez la boutique en jeu avec /product add|remove|list (admins).
   defaultProducts: [
     {
       id: 'zach-checker',

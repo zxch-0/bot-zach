@@ -1,5 +1,5 @@
 // ============================================================
-// /invitations — montre les invitations réussies d'un membre
+// /invites — montre les invitations réussies d'un membre
 // (et si le /daily est débloqué)
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
@@ -8,16 +8,16 @@ const { baseEmbed, COLORS } = require('../utils/embeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('invitations')
-    .setDescription('Affiche le nombre d\'invitations réussies (toi ou un autre membre)')
+    .setName('invites')
+    .setDescription('Show the number of successful invites (yours or another member\'s)')
     .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
-      option.setName('utilisateur').setDescription('Le membre à vérifier').setRequired(false)
+      option.setName('user').setDescription('The member to check').setRequired(false)
     ),
 
   async execute(interaction) {
     const store = interaction.client.store;
-    const target = interaction.options.getUser('utilisateur') ?? interaction.user;
+    const target = interaction.options.getUser('user') ?? interaction.user;
     const invites = await store.getInviteCount(target.id);
     const total = invites.count + invites.imported;
 

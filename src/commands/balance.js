@@ -1,5 +1,5 @@
 // ============================================================
-// /solde — affiche le solde de coins (et les invitations)
+// /balance — affiche le solde de coins (et les invitations)
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType, userMention } = require('discord.js');
 const { baseEmbed, COLORS } = require('../utils/embeds');
@@ -7,16 +7,16 @@ const { fmtCoins } = require('../utils/format');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('solde')
-    .setDescription('Affiche ton solde de coins (ou celui d\'un autre membre)')
+    .setName('balance')
+    .setDescription('Show your coin balance (or another member\'s)')
     .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
-      option.setName('utilisateur').setDescription('Le membre dont tu veux voir le solde').setRequired(false)
+      option.setName('user').setDescription('The member whose balance you want to see').setRequired(false)
     ),
 
   async execute(interaction) {
     const store = interaction.client.store;
-    const target = interaction.options.getUser('utilisateur') ?? interaction.user;
+    const target = interaction.options.getUser('user') ?? interaction.user;
     if (target.bot) {
       return interaction.reply({ content: '🤖 Les bots ne jouent pas au casino !', ephemeral: true });
     }

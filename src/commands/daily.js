@@ -22,8 +22,8 @@ module.exports = {
       const embed = baseEmbed(COLORS.success)
         .setTitle('🎁 Daily claimed !')
         .setDescription(
-          `**+${fmtCoins(result.reward)}** are added to your balance, <@${interaction.user.id}>!\n\n`
-            `💰 New balance: **${fmtCoins(result.balance)}**\n`
+          `**+${fmtCoins(result.reward)}** are added to your balance, <@${interaction.user.id}>!\n\n` +
+            `💰 New balance: **${fmtCoins(result.balance)}**\n` +
             `Next daily: ${discordRelative(Date.now() + config.dailyCooldownMs)}`
         );
       return interaction.reply({ embeds: [embed] });
@@ -43,7 +43,7 @@ module.exports = {
       .setTitle('🔒 Daily locked')
       .setDescription(
         `The daily is reserved for members with at least 1 successful invite on the server.\n\n**
-Command to unlock:\n1️⃣ Create an invite link (on Discord: text channel ➕ *Invite people*, or Server Settings → Invitations)\n2️⃣ Send it to a friend and have them join\n3️⃣ As long as they remain on the server, their invite counts ✅\n\nCheck then with /invitations and claim your daily !`
+Command to unlock:\n1️⃣ Create an invite link (on Discord: text channel ➕ *Invite people*, or Server Settings → Invitations)\n2️⃣ Send it to a friend and have them join\n3️⃣ As long as they remain on the server, their invite counts ✅\n\nCheck then with /invites and claim your daily !`
       );
 
     if (!invites.isTrackingAvailable(interaction.guildId)) {

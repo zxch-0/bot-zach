@@ -18,11 +18,11 @@ module.exports = {
     .setDescription('(Admin) Ajoute ou retire des coins à un membre')
     .setContexts(InteractionContextType.Guild)
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addUserOption((option) => option.setName('utilisateur').setDescription('Le membre à créditer').setRequired(true))
+    .addUserOption((option) => option.setName('user').setDescription('The member to credit').setRequired(true))
     .addIntegerOption((option) =>
       option
-        .setName('montant')
-        .setDescription('Positif pour ajouter, négatif pour retirer')
+        .setName('amount')
+        .setDescription('Positive to add, negative to remove')
         .setRequired(true)
         .setMinValue(-10_000_000)
         .setMaxValue(10_000_000)
@@ -36,8 +36,8 @@ module.exports = {
       });
     }
 
-    const target = interaction.options.getUser('utilisateur');
-    const amount = interaction.options.getInteger('montant');
+    const target = interaction.options.getUser('user');
+    const amount = interaction.options.getInteger('amount');
     if (amount === 0) {
       return interaction.reply({ embeds: [errorEmbed('Le montant ne peut pas être 0.')], ephemeral: true });
     }

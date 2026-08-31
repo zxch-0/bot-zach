@@ -1,5 +1,5 @@
 // ============================================================
-// /rps <mise> <choix> — pierre-feuille-ciseaux contre le bot.
+// /rps <bet> <choice> — pierre-feuille-ciseaux contre le bot.
 // Gagné : mise ×2 • Égalité : remboursée • Perdu : mise perdue.
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
@@ -15,28 +15,28 @@ module.exports = {
     .setContexts(InteractionContextType.Guild)
     .addIntegerOption((option) =>
       option
-        .setName('mise')
-        .setDescription('Le nombre de coins à miser')
+        .setName('bet')
+        .setDescription('The number of coins to bet')
         .setRequired(true)
         .setMinValue(1)
         .setMaxValue(1_000_000)
     )
     .addStringOption((option) =>
       option
-        .setName('choix')
+        .setName('choice')
         .setDescription('Ton coup')
         .setRequired(true)
         .addChoices(
-          { name: '🪨 Pierre', value: 'pierre' },
-          { name: '📄 Feuille', value: 'feuille' },
-          { name: '✂️ Ciseaux', value: 'ciseaux' }
+          { name: '🪨 Rock', value: 'rock' },
+          { name: '📄 Paper', value: 'paper' },
+          { name: '✂️ Scissors', value: 'scissors' }
         )
     ),
 
   async execute(interaction) {
     const store = interaction.client.store;
-    const bet = interaction.options.getInteger('mise');
-    const playerChoice = interaction.options.getString('choix');
+    const bet = interaction.options.getInteger('bet');
+    const playerChoice = interaction.options.getString('choice');
 
     // La mise est débitée immédiatement (atomique)
     const balanceAfterBet = await economy.tryDebit(store, interaction.user.id, bet);
@@ -63,8 +63,8 @@ module.exports = {
     const embed = baseEmbed(outcome === 'win' ? COLORS.success : outcome === 'tie' ? COLORS.warning : COLORS.error)
       .setTitle('✂️ Pierre · Feuille · Ciseaux')
       .setDescription(
-        `🙋 <@${interaction.user.id}> : **${playerChoice}** ${rps.CHOICES[playerChoice].emoji}\n` +
-          `🤖 ZachServices : **${botChoice}** ${rps.CHOICES[botChoice].emoji}\n\n` +
+        `🙋 <@${interaction.user.id}> : **${rps.CHOICES[playerChoice].label}** ${rps.CHOICES[playerChoice].emoji}\n` +
+          `🤖 ZachServices : **${rps.CHOICES[botChoice].label}** ${rps.CHOICES[botChoice].emoji}\n\n` +
           `${resultText}\n\n💰 Nouveau solde : **${fmtCoins(newBalance)}**`
       );
 
