@@ -1,6 +1,5 @@
 // ============================================================
-// /daily — 100 coins par jour, réservé aux membres ayant
-// au moins 1 invitation réussie sur le serveur.
+// /daily — 100 coins per day, for members with at least 1 successful invite on the server.
 // ============================================================
 const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const economy = require('../services/economy');
@@ -12,7 +11,7 @@ const config = require('../config');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('daily')
-    .setDescription(`Récupère tes ${config.dailyReward} coins quotidiens (1 invitation réussie requise)`)
+    .setDescription(`Get your ${config.dailyReward} daily coins (1 successful invite required)`)
     .setContexts(InteractionContextType.Guild),
 
   async execute(interaction) {
@@ -21,40 +20,36 @@ module.exports = {
 
     if (result.status === 'ok') {
       const embed = baseEmbed(COLORS.success)
-        .setTitle('🎁 Daily récupéré !')
+        .setTitle('🎁 Daily claimed !')
         .setDescription(
-          `**+${fmtCoins(result.reward)}** viennent s'ajouter à ta bourse, <@${interaction.user.id}> !\n\n` +
-            `💰 Nouveau solde : **${fmtCoins(result.balance)}**\n` +
-            `⏳ Prochain daily : ${discordRelative(Date.now() + config.dailyCooldownMs)}`
+          `**+${fmtCoins(result.reward)}** are added to your balance, <@${interaction.user.id}>!\n\n`
+            `💰 New balance: **${fmtCoins(result.balance)}**\n`
+            `Next daily: ${discordRelative(Date.now() + config.dailyCooldownMs)}`
         );
       return interaction.reply({ embeds: [embed] });
     }
 
     if (result.status === 'cooldown') {
       const embed = baseEmbed(COLORS.warning)
-        .setTitle('⏳ Déjà récupéré !')
+        .setTitle('⏳ Already claimed !')
         .setDescription(
-          `Ton daily a déjà été récupéré.\nReviens ${discordRelative(result.nextAvailableAt)} (dans **${result.timeLeft}**).`
+          `Your daily has already been claimed.\nReclaim ${discordRelative(result.nextAvailableAt)} (in **${result.timeLeft}**).`
         );
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Pas d'invitation réussie
+    // No successful invite
     const embed = baseEmbed(COLORS.error)
-      .setTitle('🔒 Daily verrouillé')
+      .setTitle('🔒 Daily locked')
       .setDescription(
-        `Le daily est réservé aux membres qui ont **au moins 1 invitation réussie** sur le serveur.\n\n` +
-          '**Comment débloquer :**\n' +
-          '1️⃣ Crée un lien d\'invitation (sur Discord : salon texte → icône ➕ *Inviter des personnes*, ou Paramètres du serveur → Invitations)\n' +
-          '2️⃣ Envoie-le à un ami et fais-le rejoindre\n' +
-          '3️⃣ Tant qu\'il reste sur le serveur, ton invitation compte ✅\n\n' +
-          'Vérifie ensuite avec `/invitations` puis reviens récupérer ton daily !'
+        `The daily is reserved for members with at least 1 successful invite on the server.\n\n**
+Command to unlock:\n1️⃣ Create an invite link (on Discord: text channel ➕ *Invite people*, or Server Settings → Invitations)\n2️⃣ Send it to a friend and have them join\n3️⃣ As long as they remain on the server, their invite counts ✅\n\nCheck then with /invitations and claim your daily !`
       );
 
     if (!invites.isTrackingAvailable(interaction.guildId)) {
       embed.addFields({
-        name: '⚠️ Note pour l\'admin',
-        value: 'Le tracking d\'invitations est **désactivé** : le bot a besoin de la permission **Gérer le serveur** (et de l\'intent *Server Members*).',
+        name: '⚠️ Note for admin',
+        value: 'Invite tracking is **disabled**: the bot needs Manage Server permission (and Server Members intent).',
       });
     }
 
