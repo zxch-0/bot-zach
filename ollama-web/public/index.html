@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ollama Web — un Ollama local, dans le cloud</title>
+  <meta name="description" content="Interface de chat web pour Ollama : faites tourner un modèle habituellement local dans le cloud, gratuitement." />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%237c5cff'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='system-ui'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app" id="app" hidden>
+    <!-- ============================ SIDEBAR ============================ -->
+    <aside class="sidebar" id="sidebar">
+      <header class="brand">
+        <span class="brand-logo" aria-hidden="true">🤖</span>
+        <span class="brand-text">
+          <strong>Ollama Web</strong>
+          <small id="brandSubtitle">interface de chat</small>
+        </span>
+        <button class="icon-btn sidebar-close" id="sidebarClose" type="button" title="Fermer le menu" aria-label="Fermer le menu">✕</button>
+      </header>
+
+      <button class="btn btn-primary btn-new" id="newChat" type="button">
+        <span aria-hidden="true">＋</span> Nouvelle discussion
+      </button>
+
+      <section class="panel">
+        <label class="field">
+          <span class="field-label">Fournisseur</span>
+          <select id="providerSelect" aria-label="Fournisseur"></select>
+        </label>
+        <p class="field-hint" id="providerHint">—</p>
+
+        <label class="field">
+          <span class="field-label">Modèle</span>
+          <div class="row">
+            <select id="modelSelect" aria-label="Modèle"></select>
+            <button class="icon-btn" id="refreshModels" type="button" title="Rafraîchir la liste des modèles" aria-label="Rafraîchir la liste des modèles">⟳</button>
+            <button class="icon-btn" id="openPull" type="button" title="Télécharger un modèle (ollama pull)" aria-label="Télécharger un modèle">⬇</button>
+          </div>
+        </label>
+        <p class="field-hint" id="modelHint">—</p>
+      </section>
+
+      <section class="panel panel-grow">
+        <div class="panel-title">
+          <span>Discussions</span>
+          <button class="icon-btn" id="clearAll" type="button" title="Supprimer toutes les discussions" aria-label="Supprimer toutes les discussions">🗑</button>
+        </div>
+        <nav class="conv-list" id="convList" aria-label="Historique"></nav>
+      </section>
+
+      <footer class="sidebar-footer">
+        <button class="icon-btn" id="openSettings" type="button" title="Réglages" aria-label="Réglages">⚙️</button>
+        <button class="icon-btn" id="themeToggle" type="button" title="Thème clair / sombre" aria-label="Changer de thème">🌗</button>
+        <button class="icon-btn" id="exportChat" type="button" title="Exporter la discussion" aria-label="Exporter la discussion">⤓</button>
+        <button class="icon-btn danger" id="logout" type="button" title="Se déconnecter" aria-label="Se déconnecter" hidden>⎋</button>
+        <span class="spacer"></span>
+        <button class="link-btn" id="openInfo" type="button">À propos</button>
+      </footer>
+    </aside>
+
+    <!-- ============================== MAIN ============================== -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" type="button" title="Menu" aria-label="Ouvrir le menu">☰</button>
+        <div class="topbar-title">
+          <h1 id="chatTitle">Nouvelle discussion</h1>
+          <p id="chatSubtitle">—</p>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge" id="statusBadge" title="État du fournisseur">●</span>
+          <button class="icon-btn" id="clearChat" type="button" title="Vider cette discussion" aria-label="Vider cette discussion">🧹</button>
+        </div>
+      </header>
+
+      <div class="messages" id="messages" role="log" aria-live="polite">
+        <section class="welcome" id="welcome">
+          <h2>Votre Ollama, maintenant dans le cloud ☁️</h2>
+          <p>
+            Cette interface pilote un serveur <strong>Ollama</strong> : celui de votre machine, un serveur
+            distant (Colab, VPS, Docker…) ou les modèles hébergés d’<strong>Ollama Cloud</strong>.
+            Le rendu est identique aux commandes <code>ollama run</code> que vous connaissez.
+          </p>
+          <div class="suggestions" id="suggestions">
+            <button class="suggestion" type="button" data-prompt="Explique-moi la différence entre un conteneur Docker et une machine virtuelle, en 5 points.">🐳 Docker vs VM</button>
+            <button class="suggestion" type="button" data-prompt="Écris une fonction JavaScript qui met en majuscule la première lettre de chaque mot, avec un exemple d'utilisation.">🧩 Fonction JS</button>
+            <button class="suggestion" type="button" data-prompt="Résume en 3 phrases ce qu'est un modèle de langage (LLM) pour quelqu'un qui n'y connaît rien.">📚 Vulgariser un LLM</button>
+            <button class="suggestion" type="button" data-prompt="Donne-moi 5 idées de noms pour un projet de chat auto-hébergé, avec une courte justification.">💡 Idées de noms</button>
+          </div>
+          <div class="welcome-note" id="welcomeNote" hidden></div>
+        </section>
+      </div>
+
+      <form class="composer" id="composer">
+        <div class="composer-box">
+          <textarea id="input" rows="1" placeholder="Écrivez votre message…  (Entrée = envoyer, Maj+Entrée = nouvelle ligne)" aria-label="Message"></textarea>
+          <button class="btn btn-primary send" id="sendBtn" type="submit" title="Envoyer" aria-label="Envoyer">➤</button>
+          <button class="btn btn-stop" id="stopBtn" type="button" title="Arrêter la génération" aria-label="Arrêter" hidden>■</button>
+        </div>
+        <div class="composer-meta">
+          <span id="composerHint">Prêt.</span>
+          <span class="spacer"></span>
+          <span id="charCount">0</span>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <!-- ============================= LOGIN ============================= -->
+  <div class="overlay" id="loginOverlay" hidden>
+    <form class="card login-card" id="loginForm">
+      <span class="brand-logo big" aria-hidden="true">🤖</span>
+      <h2>Ollama Web</h2>
+      <p class="muted">Ce site est protégé par un mot de passe.</p>
+      <label class="field">
+        <span class="field-label">Mot de passe</span>
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required />
+      </label>
+      <p class="error" id="loginError" hidden></p>
+      <button class="btn btn-primary" type="submit">Entrer</button>
+    </form>
+  </div>
+
+  <!-- ============================ SETTINGS ============================ -->
+  <div class="overlay" id="settingsOverlay" hidden>
+    <div class="card settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="card-header">
+        <h2 id="settingsTitle">Réglages</h2>
+        <button class="icon-btn" id="closeSettings" type="button" aria-label="Fermer">✕</button>
+      </header>
+      <div class="card-body">
+        <label class="field">
+          <span class="field-label">Prompt système</span>
+          <textarea id="systemPrompt" rows="3" placeholder="Tu es un assistant francophone, précis et concis."></textarea>
+        </label>
+        <div class="grid2">
+          <label class="field">
+            <span class="field-label">Température <output id="temperatureOut">0.7</output></span>
+            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7" />
+          </label>
+          <label class="field">
+            <span class="field-label">top_p <output id="topPOut">0.9</output></span>
+            <input type="range" id="topP" min="0.05" max="1" step="0.05" value="0.9" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Fenêtre de contexte (num_ctx)</span>
+          <select id="numCtx">
+            <option value="">Défaut du serveur</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+            <option value="16384">16384</option>
+            <option value="32768">32768</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="showThinking" />
+          <span>Afficher le raisonnement des modèles « thinking »</span>
+        </label>
+        <div class="info-box" id="diagBox">
+          <h3>Diagnostic serveur</h3>
+          <pre id="diagContent">Chargement…</pre>
+        </div>
+      </div>
+      <footer class="card-footer">
+        <button class="btn" id="resetSettings" type="button">Valeurs par défaut</button>
+        <span class="spacer"></span>
+        <button class="btn btn-primary" id="saveSettings" type="button">Enregistrer</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ============================== PULL ============================== -->
+  <div class="overlay" id="pullOverlay" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="pullTitle">
+      <header class="card-header">
+        <h2 id="pullTitle">Télécharger un modèle</h2>
+        <button class="icon-btn" id="closePull" type="button" aria-label="Fermer">✕</button>
+      </header>
+      <div class="card-body">
+        <p class="muted">Équivalent de <code>ollama pull …</code> sur le fournisseur sélectionné.</p>
+        <label class="field">
+          <span class="field-label">Nom du modèle</span>
+          <input type="text" id="pullModel" placeholder="qwen2.5:0.5b" list="pullExamples" />
+          <datalist id="pullExamples">
+            <option value="qwen2.5:0.5b">0,5 Go — minuscule, idéal CPU gratuit</option>
+            <option value="llama3.2:1b">1,3 Go — rapide</option>
+            <option value="qwen2.5:3b">2 Go — bon compromis</option>
+            <option value="llama3.2:3b">2 Go — polyvalent</option>
+            <option value="gemma3:4b">3,3 Go — multimodal</option>
+            <option value="qwen3:4b">2,5 Go — raisonnement léger</option>
+            <option value="mistral:7b">4,4 Go — classique</option>
+          </datalist>
+        </label>
+        <div class="progress" id="pullProgress" hidden>
+          <div class="progress-bar"><span id="pullBar"></span></div>
+          <p id="pullStatus">—</p>
+        </div>
+      </div>
+      <footer class="card-footer">
+        <span class="muted small">Nécessite un Ollama joignable (local ou distant).</span>
+        <span class="spacer"></span>
+        <button class="btn btn-primary" id="startPull" type="button">Télécharger</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ============================== INFO ============================== -->
+  <div class="overlay" id="infoOverlay" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <header class="card-header">
+        <h2 id="infoTitle">À propos</h2>
+        <button class="icon-btn" id="closeInfo" type="button" aria-label="Fermer">✕</button>
+      </header>
+      <div class="card-body prose">
+        <p><strong>Ollama Web</strong> est une interface légère (0 dépendance) qui parle à l’API d’Ollama,
+          exactement comme le fait <code>ollama run</code> sur votre machine — sauf qu’ici le serveur
+          peut vivre dans le cloud, gratuitement.</p>
+        <h3>Trois façons de l’utiliser</h3>
+        <ol>
+          <li><strong>Ollama Cloud</strong> : les modèles tournent chez Ollama, clé gratuite sur
+            <code>ollama.com/settings/keys</code>.</li>
+          <li><strong>Ollama distant</strong> : un Ollama lancé sur Colab / un VPS / votre PC, exposé par un tunnel
+            (Cloudflare Tunnel, ngrok…).</li>
+          <li><strong>Ollama local</strong> : le site tourne sur la même machine que votre Ollama.</li>
+        </ol>
+        <p class="muted">Les discussions restent dans votre navigateur (localStorage) : rien n’est stocké côté serveur.</p>
+      </div>
+      <footer class="card-footer">
+        <span class="muted small" id="versionLabel"></span>
+        <span class="spacer"></span>
+        <button class="btn btn-primary" id="closeInfoBottom" type="button">Fermer</button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

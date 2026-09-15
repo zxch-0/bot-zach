@@ -1,0 +1,53 @@
+# ============================================================
+#  Démarrage local en une commande :  docker compose up
+#     • « ollama » : le serveur Ollama (avec volume persistant)
+#     • « web »    : le site de chat, sur http://localhost:3000
+#
+#  Télécharger un modèle :
+#     docker compose exec ollama ollama pull qwen2.5:0.5b
+#  …ou utilisez le bouton ⬇ de l'interface (fonctionne aussi).
+#
+#  GPU NVIDIA (optionnel) : décommentez le bloc « deploy » du service ollama
+#  et installez le NVIDIA Container Toolkit.
+# ============================================================
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-server
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  web:
+    build: .
+    container_name: ollama-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      HOST: 0.0.0.0
+      # Le site parle au conteneur « ollama » par son nom de service.
+      OLLAMA_REMOTE_URL: http://ollama:11434
+      OLLAMA_REMOTE_LABEL: Ollama (Docker)
+      OLLAMA_REMOTE_MODEL: qwen2.5:0.5b
+      DISABLE_LOCAL_PROVIDER: "true"
+      DEFAULT_PROVIDER: remote
+      ALLOW_PULL: "true"
+      # Mot de passe du site : laissez vide pour un usage 100 % local.
+      APP_PASSWORD: "${APP_PASSWORD:-}"
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+    depends_on:
+      - ollama
+
+volumes:
+  ollama-models:

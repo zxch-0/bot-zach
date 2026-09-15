@@ -1,0 +1,28 @@
+{
+  "name": "ollama-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ollama Web — interface de chat pour un modèle Ollama qui tourne dans le cloud. Zéro dépendance, déployable gratuitement (Render, Hugging Face Spaces, Docker, Colab).",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "demo": "node scripts/demo.js",
+    "mock": "node scripts/mock-ollama.js",
+    "test": "node scripts/test.js",
+    "test:ui": "node scripts/test-ui.js"
+  },
+  "keywords": [
+    "ollama",
+    "llm",
+    "chat",
+    "cloud",
+    "gratuit"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

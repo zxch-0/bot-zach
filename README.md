@@ -352,6 +352,33 @@ Le stockage reste le fichier local `data/zach.json` (persistant, aucune configur
 
 ---
 
+## 🤖 Bonus : Ollama Web — un vrai LLM dans le cloud, gratuitement
+
+Le dépôt contient aussi **[`ollama-web/`](ollama-web/README.md)** : un **site de chat** qui fait
+tourner un modèle **Ollama** (normalement limité à votre machine) **dans le cloud**, sans changer
+vos habitudes : mêmes modèles, même streaming, mêmes options.
+
+- 🧩 **Zéro dépendance** (pas de framework, pas de build) — Node 18+ suffit ;
+- 🔌 se branche sur **Ollama Cloud** (clé gratuite), un **Ollama distant** (Colab T4 gratuit + tunnel,
+  VPS, autre PC), votre **Ollama local**, ou un conteneur **tout-en-un** ;
+- 🔐 mot de passe, sessions signées, la clé API ne touche jamais le navigateur ;
+- 💬 streaming token par token, markdown + bouton *Copier*, `think`, `ollama pull` depuis l'interface,
+  historique et export `.md`, thème clair/sombre ;
+- ☁️ **déploiement gratuit** : Render (plan gratuit, blueprint fourni `ollama-web/render.yaml`),
+  Hugging Face Spaces (`Dockerfile.allinone`), Docker Compose en local.
+
+```bash
+cd ollama-web
+npm run demo     # 🧪 aperçu immédiat sans Ollama (modèle simulé) → http://localhost:3000
+npm start        # 🚀 le vrai site, branché sur votre Ollama
+npm test         # ✅ 46 vérifications (HTTP, SSE, fournisseurs, sécurité)
+```
+
+Guide complet, options d'hébergement pas à pas et tableau des variables :
+**[ollama-web/README.md](ollama-web/README.md)**.
+
+---
+
 ## 🔧 Personnaliser le bot
 
 | Quoi | Où |
@@ -438,6 +465,15 @@ bot-zach/
 │   ├── simulate.js           # 45 tests d'intégration (npm run simulate)
 │   ├── test-postgres.js      # 41 tests SQL sur base émulée pg-mem (npm run test-pg)
 │   └── verify.js             # 103 vérifications statiques (npm run verify)
+├── ollama-web/               # 🤖 Site de chat Ollama déployable gratuitement (voir son README)
+│   ├── src/                  #   serveur HTTP + API + adaptateurs Ollama/OpenAI (0 dépendance)
+│   ├── public/               #   interface (HTML/CSS/JS natifs)
+│   ├── scripts/              #   démo, faux Ollama, tests backend et interface
+│   ├── cloud/                #   notebook Colab (T4 gratuit) + tunnel Cloudflare
+│   ├── Dockerfile            #   image du site seul
+│   ├── Dockerfile.allinone   #   Ollama + site dans un conteneur (Hugging Face Spaces…)
+│   ├── docker-compose.yml    #   Ollama + site en local
+│   └── render.yaml           #   Blueprint Render gratuit (chemin : ollama-web/render.yaml)
 ├── render.yaml               # Blueprint de déploiement Render en 2 clics
 ├── .env.example              # Modèle de configuration
 ├── tsconfig.json             # Configuration de la vérification de types
