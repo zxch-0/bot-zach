@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log*
+.env
+.git
+.gitignore
+data
+*.log
+.DS_Store
+cloud
+deploy
+README.md
+render.yaml
+docker-compose.yml

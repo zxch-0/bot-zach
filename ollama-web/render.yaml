@@ -1,0 +1,52 @@
+# ============================================================
+#  Blueprint Render — Ollama Web (gratuit)
+#
+#  Render → New + → Blueprint → sélectionnez ce dépôt, puis indiquez
+#  comme chemin du blueprint :   ollama-web/render.yaml
+#  (Render accepte désormais un render.yaml placé dans un sous-dossier.)
+#
+#  Le plan gratuit de Render suffit : le site ne fait que relayer les
+#  requêtes vers un Ollama (Cloud ou distant). Aucun GPU n'est requis ici.
+# ============================================================
+services:
+  - type: web
+    name: ollama-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: ollama-web
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Mot de passe du site (obligatoire en pratique : sinon n'importe qui
+      # peut utiliser votre clé API).
+      - key: APP_PASSWORD
+        sync: false
+      # Secret de signature des sessions : renseignez une longue chaîne
+      # aléatoire pour que les sessions survivent aux redéploiements.
+      - key: SESSION_SECRET
+        generateValue: true
+      # --- Option 1 (recommandée) : Ollama Cloud, clé gratuite -----------
+      # https://ollama.com/settings/keys
+      - key: OLLAMA_CLOUD_API_KEY
+        sync: false
+      # Modèle cloud proposé par défaut (la liste reste modifiable dans l'UI)
+      - key: OLLAMA_CLOUD_MODEL
+        value: gpt-oss:20b
+      # --- Option 2 : Ollama distant (Colab/VPS + tunnel) -----------------
+      # Exemple : https://xxxx.trycloudflare.com
+      - key: OLLAMA_REMOTE_URL
+        sync: false
+      - key: OLLAMA_REMOTE_LABEL
+        value: Ollama distant (Colab/VPS)
+      # --- Divers ---------------------------------------------------------
+      - key: ALLOW_PULL
+        value: "true"
+      - key: REQUEST_TIMEOUT_MS
+        value: "300000"
+      - key: MAX_BODY_KB
+        value: "512"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"
